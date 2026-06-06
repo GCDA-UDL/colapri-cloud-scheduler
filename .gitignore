@@ -1,0 +1,12 @@
+# Maven
+target/
+*.class
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+
+# Python (figures)
+__pycache__/
+*.pyc

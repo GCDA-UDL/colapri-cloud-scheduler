@@ -1,0 +1,8 @@
+ColaPri — Class-Oriented Load-Adaptive Priority scheduler
+Copyright 2026 Vítor da Silva
+
+Licensed under the Apache License, Version 2.0.
+
+This work is evaluated with CloudSim Plus (https://cloudsimplus.org), which is
+distributed separately under the Apache License 2.0 and pulled as a Maven
+dependency; its source is not included in this repository.
