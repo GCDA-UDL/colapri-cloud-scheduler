@@ -34,6 +34,8 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
 
     private final Map<Integer, Integer> weights = new HashMap<>();   // class -> weight (override)
     private int adaptiveThreshold = 0;
+    private ActivationPolicy activation = null;   // EXP-F: auto-tuned activation (fuzzy/analytic/learned)
+    private int prevBacklog = 0;                  // for growth-aware activation policies
 
     // persistent ColaPri state (survives across scheduling events)
     private final Map<Long, Double> tag = new HashMap<>();           // cloudlet id -> virtual tag
@@ -46,6 +48,14 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
 
     public CloudletSchedulerColaPri setAdaptiveThreshold(final int threshold) {
         this.adaptiveThreshold = Math.max(0, threshold);
+        return this;
+    }
+
+    /** EXP-F: replace the fixed threshold with an automatic activation policy returning an
+     *  activation degree alpha in [0,1] (0 = FIFO, 1 = full weighted-RR). The effective per-class
+     *  weight blends toward neutral as alpha -> 0: w_eff = 1 + alpha*(w-1). */
+    public CloudletSchedulerColaPri setActivationPolicy(final ActivationPolicy policy) {
+        this.activation = policy;
         return this;
     }
 
@@ -67,16 +77,30 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
 
     private void orderWaitingByColaPri() {
         final List<CloudletExecution> waiting = getCloudletWaitingList();
-        // adaptive: below the load threshold, stay plain FIFO (no priority reordering)
-        if (waiting.size() < 2 || waiting.size() <= adaptiveThreshold) {
-            return;
+        if (waiting.size() < 2) return;
+        final int backlog = waiting.size();
+
+        // activation degree alpha in [0,1]: 0 = stay FIFO, 1 = full weighted-RR
+        final double a;
+        if (activation != null) {
+            a = activation.alpha(backlog, prevBacklog);
+            prevBacklog = backlog;
+        } else {
+            prevBacklog = backlog;
+            if (backlog <= adaptiveThreshold) return;   // fixed-threshold mode (legacy)
+            a = 1.0;
         }
-        // assign a persistent weighted-round-robin tag to any cloudlet not seen yet
+        if (a <= 0.0) return;
+        final double alpha = a;
+
+        // assign a persistent weighted-round-robin tag to any cloudlet not seen yet;
+        // effective weight blends toward neutral (1) as alpha shrinks
         for (final CloudletExecution cle : waiting) {
             tag.computeIfAbsent(cle.getId(), id -> {
                 final int c = clamp(cle.getCloudlet().getPriority());
                 final int k = seen.merge(c, 1, Integer::sum) - 1;    // 0-based index within class
-                return (double) k / weight(c);                      // ColaPri weighted-RR virtual tag
+                final double wEff = 1.0 + alpha * (weight(c) - 1.0); // alpha=1 -> w, alpha=0 -> 1
+                return k / wEff;                                     // ColaPri weighted-RR virtual tag
             });
         }
         sortCloudletWaitingList(

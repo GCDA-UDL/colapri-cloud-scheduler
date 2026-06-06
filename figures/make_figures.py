@@ -86,6 +86,27 @@ def fig_traces():
     plt.close(fig)
 
 
+def fig_activation():
+    # EXP-F: trade-off resp.p0 (x, lower=faster high class) vs starv.p9 (y, lower=less starvation)
+    name = ["always-on", "fixed(15)", "best-fixed(40)", "analytic(20,50)", "fuzzy(20,50)", "learned"]
+    p0 = [257.1, 289.2, 295.1, 294.2, 256.9, 294.5]
+    st = [55.4, 49.0, 47.5, 46.8, 54.8, 47.8]
+    col = [GREY, AMBER, AMBER, GREEN, GREY, BLUE]
+    mk = ["o", "s", "s", "*", "o", "^"]
+    fig, ax = plt.subplots(figsize=(6.2, 3.6))
+    for i in range(len(name)):
+        ax.scatter(p0[i], st[i], s=160 if mk[i] == "*" else 90, c=col[i], marker=mk[i],
+                   edgecolors="black", linewidths=0.5, zorder=3)
+        ax.annotate(name[i], (p0[i], st[i]), textcoords="offset points",
+                    xytext=(6, 5), fontsize=8)
+    ax.set_xlabel("high-class response p0 (s)  —  lower is better")
+    ax.set_ylabel("low-class starvation p9  —  lower is better")
+    ax.set_title("EXP-F: activation policies (bottom-left = better on both)")
+    ax.grid(True, alpha=0.3)
+    fig.savefig(os.path.join(OUT, "fig_activation.pdf"))
+    plt.close(fig)
+
+
 if __name__ == "__main__":
-    fig_starvation(); fig_weights(); fig_perclass(); fig_traces()
+    fig_starvation(); fig_weights(); fig_perclass(); fig_traces(); fig_activation()
     print("figures written to", OUT)

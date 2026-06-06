@@ -44,8 +44,17 @@ Each is a `main` class; select it with `-Dexec.mainClass=colapri.<Class>`.
 | `ScalabilityEval`  | EXP-C · 200/500/1000 cloudlets (10 seeds) | makespan, per-class response, overhead vs. scale |
 | `SensitivityEval`  | EXP-D · parameter sweeps (30 seeds) | weight ratio, adaptive threshold, load, PEs |
 | `RealTraceRigorous`| EXP-E · 5 real traces (20 seeds) | per-class response on PlanetLab/Alibaba/Bitbrains/Materna/Azure |
+| `ActivationEval`   | EXP-F · automatic activation (train/test) | always-on / fixed / analytic / fuzzy / learned threshold |
 
 All metrics are reported as mean ± 95% CI.
+
+### Self-tuning activation (EXP-F)
+
+`ActivationPolicy` turns ColaPri's threshold into an activation degree `α ∈ [0,1]` (0 = FIFO, 1 = full
+weighted-RR), set by one of: `alwaysOn`, `fixed(θ)`, `analytic(lo,hi)` (closed-form ramp),
+`fuzzy(lo,hi)` (Mamdani), or `learned(table,width)` (offline lookup). All are O(1) and deterministic at
+inference. EXP-F shows the cheap **analytic** controller matches the offline-**learned** lookup and a
+hand-tuned fixed θ within CI — so **no ML is needed** to tune ColaPri.
 
 ### Real traces (EXP-E)
 
