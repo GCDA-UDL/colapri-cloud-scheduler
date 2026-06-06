@@ -53,13 +53,16 @@ public class ActivationEval {
         System.out.print("\nLearned alpha by backlog bucket [each " + BUCKET_W + " tasks]: ");
         System.out.println(Arrays.toString(round(table)));
 
-        // ---- best single fixed-theta (oracle reference over TEST) ----
+        // ---- best single fixed-theta: full sweep over TEST (oracle reference) ----
         int bestTheta = 0; double bestThetaCost = Double.MAX_VALUE;
+        System.out.println("\n[fixed-theta sweep over TEST seeds] theta -> cost");
         for (final int th : new int[]{0, 5, 10, 20, 40}) {
             final double c = avgCostTest(() -> ActivationPolicy.fixed(th));
+            System.out.printf("  theta=%-3d -> cost %.1f%n", th, c);
             if (c < bestThetaCost) { bestThetaCost = c; bestTheta = th; }
         }
         final int bt = bestTheta;
+        System.out.printf("  best fixed theta = %d (cost %.1f)%n", bt, bestThetaCost);
 
         // ---- evaluate all policies on TEST seeds ----
         record Pol(String name, java.util.function.Supplier<ActivationPolicy> p) {}

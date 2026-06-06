@@ -179,7 +179,7 @@ def fig_traces():
     ax.bar(x + ww, strict, ww, label="Strict (lower bound)", color=AMBER)
     ax.set_xticks(x); ax.set_xticklabels(ds, rotation=15)
     ax.set_ylabel("interactive-class response p0 (s)")
-    ax.set_title("Real traces: ColaPri speeds the interactive class (-41..-53% vs FCFS)")
+    ax.set_title("Production traces: interactive-class response", fontsize=10)
     ax.legend(fontsize=9)
     fig.savefig(os.path.join(OUT, "fig_traces.pdf"))
     plt.close(fig)
@@ -282,7 +282,7 @@ def fig_datacenter():
     ax.bar(x - w / 2, d0, w, label="default  (resp p0)", color=GREY)
     ax.bar(x + w / 2, c0, w, label="ColaPri  (resp p0)", color=GREEN)
     ax.set_xticks(x); ax.set_xticklabels(mp); ax.set_ylabel("high-class response p0 (s)")
-    ax.set_ylim(36, 43); ax.set_title("Datacenter (16 VMs): ColaPri speeds p0 under every mapping")
+    ax.set_ylim(36, 43); ax.set_title("Datacenter: ColaPri speeds p0 under every mapping", fontsize=10)
     ax.legend(fontsize=8)
     fig.savefig(os.path.join(OUT, "fig_datacenter.pdf")); plt.close(fig)
 
@@ -329,7 +329,7 @@ def fig_jain():
     fig, ax = plt.subplots(figsize=(5.4, 3.0))
     ax.bar(name, jain, color=col)
     ax.set_ylabel("weighted Jain index"); ax.set_ylim(0, 1.0)
-    ax.set_title("Weighted fairness (higher = service closer to weights)")
+    ax.set_title("Weighted fairness (higher is better)", fontsize=10)
     fig.savefig(os.path.join(OUT, "fig_jain.pdf")); plt.close(fig)
 
 
