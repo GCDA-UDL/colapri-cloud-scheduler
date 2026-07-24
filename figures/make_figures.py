@@ -38,7 +38,7 @@ def fig_operation():
     ax.set_xlim(0, 10); ax.set_ylim(0, 5); ax.axis("off")
 
     # arrivals (mixed stream)
-    ax.text(1.0, 4.6, "arriving cloudlets\n(mixed priority classes)", ha="center", fontsize=9, color=DARK)
+    ax.text(1.0, 4.62, "(1) arriving cloudlets\n(mixed priority classes, tagged once)", ha="center", fontsize=8.6, color=DARK)
     rng = [0, 9, 0, 5, 0, 0, 9, 5, 0, 0]
     _toks(ax, 0.3, 3.7, rng)
     _arrow(ax, 2.2, 3.78, 3.0, 3.78)
@@ -47,10 +47,12 @@ def fig_operation():
     _box(ax, 3.0, 1.0, 3.8, 3.6, "#f5f8fa", GREEN, lw=2.0)
     ax.text(4.9, 4.32, "ColaPri  (per-VM CloudletScheduler)", ha="center", fontsize=10,
             color=GREEN, fontweight="bold")
-    # adaptive gate
-    _box(ax, 3.2, 3.7, 3.4, 0.5, "#eef6ef", GREEN, lw=1.0)
-    ax.text(4.9, 3.95, r"adaptive $\alpha\in[0,1]$:  FIFO if backlog $\leq\theta$, else weighted-RR",
-            ha="center", fontsize=8, color=DARK)
+    # adaptive gate (two lines so the label never overflows the inner box)
+    _box(ax, 3.12, 3.5, 3.56, 0.62, "#eef6ef", GREEN, lw=1.0)
+    ax.text(4.9, 3.92, r"adaptive gate  $\alpha\in[0,1]$", ha="center", fontsize=7.8,
+            color=DARK, fontweight="bold")
+    ax.text(4.9, 3.68, r"FIFO if backlog $\leq\theta$, else weighted-RR", ha="center",
+            fontsize=7.0, color=DARK)
     # three class lanes with weights
     lanes = [(0, "p0", 6, GREEN, [0, 0, 0, 0, 0, 0]), (5, "p5", 3, AMBER, [5, 5, 5]), (9, "p9", 1, GREY, [9])]
     yl = 3.05
@@ -58,12 +60,12 @@ def fig_operation():
         ax.text(3.35, yl + 0.07, f"{lbl} (w={w})", fontsize=8, color=col, fontweight="bold")
         _toks(ax, 4.25, yl, seq, s=0.18, gap=0.05)
         yl -= 0.52
-    ax.text(4.9, 1.28, r"virtual-time tag  $\tau = k / w_c$  (assigned once)", ha="center",
-            fontsize=8.5, color=DARK, style="italic")
+    ax.text(4.9, 1.28, r"(2) order by virtual-time tag  $\tau = k / w_c$  (assigned once)", ha="center",
+            fontsize=8.0, color=DARK, style="italic")
     _arrow(ax, 6.85, 2.6, 7.6, 2.6)
 
     # dispatch order
-    ax.text(8.7, 4.6, "dispatch order\n($\\propto$ weight, no starvation)", ha="center", fontsize=9, color=DARK)
+    ax.text(8.7, 4.62, "(3) dispatch order\n($\\propto$ weight, no starvation)", ha="center", fontsize=8.6, color=DARK)
     disp = [0, 0, 0, 5, 0, 0, 0, 5, 9, 0]
     for i, c in enumerate(disp):
         y = 3.9 - i * 0.32
@@ -80,34 +82,34 @@ def fig_architecture():
     fig, ax = plt.subplots(figsize=(9.2, 4.6))
     ax.set_xlim(0, 10); ax.set_ylim(0, 5); ax.axis("off")
 
-    ax.text(5, 4.75, "Tasks (cloudlets) with priority class", ha="center", fontsize=9, color=DARK)
+    ax.text(5, 4.78, "Tasks (cloudlets) with priority class", ha="center", fontsize=10.5, color=DARK)
     _toks(ax, 4.0, 4.35, [0, 5, 9, 0, 5, 0], s=0.16, gap=0.05)
     _arrow(ax, 5.0, 4.3, 5.0, 3.95)
 
     # broker (mapping axis)
     _box(ax, 1.2, 3.2, 7.6, 0.7, "#eef3f8", BLUE, lw=1.6)
-    ax.text(5.0, 3.55, "DatacenterBroker — task$\\to$VM mapping", ha="center", fontsize=9.5,
+    ax.text(5.0, 3.55, "DatacenterBroker — task$\\to$VM mapping", ha="center", fontsize=11,
             color=BLUE, fontweight="bold")
-    ax.text(5.0, 3.3, "{RoundRobin · Min-Min · Max-Min · Demand-Aware}", ha="center", fontsize=8, color=DARK)
+    ax.text(5.0, 3.30, "{RoundRobin · Min-Min · Max-Min · Demand-Aware}", ha="center", fontsize=9, color=DARK)
 
     # VMs (scheduling axis)
     for i, vx in enumerate([1.3, 4.0, 6.7]):
         _arrow(ax, 5.0, 3.18, vx + 1.0, 2.62)
         _box(ax, vx, 1.5, 2.0, 1.1, "#f5f8fa", GREEN, lw=1.6)
-        ax.text(vx + 1.0, 2.36, f"VM{i+1}", ha="center", fontsize=9, color=DARK, fontweight="bold")
-        ax.text(vx + 1.0, 2.06, "CloudletScheduler", ha="center", fontsize=7.5, color=DARK)
-        ax.text(vx + 1.0, 1.84, "= ColaPri", ha="center", fontsize=8.5, color=GREEN, fontweight="bold")
+        ax.text(vx + 1.0, 2.36, f"VM{i+1}", ha="center", fontsize=10.5, color=DARK, fontweight="bold")
+        ax.text(vx + 1.0, 2.04, "CloudletScheduler", ha="center", fontsize=9, color=DARK)
+        ax.text(vx + 1.0, 1.80, "= ColaPri", ha="center", fontsize=10, color=GREEN, fontweight="bold")
         _toks(ax, vx + 0.35, 1.58, [0, 0, 5, 9], s=0.13, gap=0.04)
         _arrow(ax, vx + 1.0, 1.48, vx + 1.0, 1.12)
 
     # hosts base
     _box(ax, 1.2, 0.5, 7.6, 0.6, DARK, DARK)
     ax.text(5.0, 0.8, "Hosts  (processing elements, PEs)", ha="center", color="white",
-            fontsize=9, fontweight="bold")
+            fontsize=10.5, fontweight="bold")
 
     # orthogonality annotation
-    ax.text(9.55, 3.55, "mapping\n(which VM)", ha="center", fontsize=8, color=BLUE, rotation=90)
-    ax.text(9.55, 2.05, "scheduling\n(order in VM)", ha="center", fontsize=8, color=GREEN, rotation=90)
+    ax.text(9.62, 3.55, "mapping\n(which VM)", ha="center", fontsize=9.5, color=BLUE, rotation=90)
+    ax.text(9.62, 2.05, "scheduling\n(order in VM)", ha="center", fontsize=9.5, color=GREEN, rotation=90)
     fig.savefig(os.path.join(OUT, "fig_architecture.pdf"))
     plt.close(fig)
 
@@ -207,35 +209,99 @@ def fig_activation():
 
 
 def fig_problem():
-    """Concept: a single FIFO queue lets a batch block an urgent task (the bottleneck ColaPri removes)."""
-    fig, ax = plt.subplots(figsize=(7.6, 1.9)); ax.set_xlim(0, 12); ax.set_ylim(0, 2); ax.axis("off")
-    ax.text(0.2, 1.6, "Single FIFO queue under load", fontsize=10, color=DARK, fontweight="bold")
-    seq = [9, 9, 9, 9, 9, 0, 9, 9, 9, 9]
-    for i, c in enumerate(seq):
-        ax.add_patch(Rectangle((0.3 + i * 1.07, 0.45), 0.92, 0.6, fc={0: GREEN, 9: GREY}[c], ec="white", lw=1, zorder=3))
-    ax.annotate("urgent task stuck\nbehind the batch", xy=(0.3 + 5 * 1.07 + 0.46, 1.05), xytext=(7.4, 1.7),
-                fontsize=8.5, color=RED, ha="center", arrowprops=dict(arrowstyle="->", color=RED))
-    ax.text(11.3, 0.72, "out", fontsize=9, color=DARK); _arrow(ax, 0.0, 0.75, 0.25, 0.75)
+    """A single FIFO queue lets one client's bulk submission block an urgent task (head-of-line blocking).
+    Two panels: (a) light load served one-by-one; (b) a bulk batch traps the urgent task at the back."""
+    URG, BATCH = GREEN, BLUE
+    fig, (axA, axB) = plt.subplots(2, 1, figsize=(8.6, 3.4))
+    for ax in (axA, axB):
+        ax.set_xlim(0, 13); ax.set_ylim(0, 1.5); ax.axis("off")
+
+    def row(ax, n, urgent_idx):
+        ax.add_patch(FancyArrowPatch((-0.02, 0.52), (0.28, 0.52), arrowstyle="-|>",
+                     mutation_scale=12, color=DARK, lw=1.6))
+        for i in range(n):
+            fc = URG if i == urgent_idx else BATCH
+            ax.add_patch(Rectangle((0.3 + i * 1.0, 0.22), 0.86, 0.6, fc=fc, ec="white", lw=1, zorder=3))
+        ax.text(0.3 + n * 1.0 + 0.12, 0.52, "out", fontsize=9, color=DARK, va="center")
+
+    axA.text(0.0, 1.34, "(a) light load: mixed arrivals served one-by-one — the urgent task leaves quickly",
+             fontsize=8.6, color=DARK, fontweight="bold")
+    row(axA, 5, 1)
+    axA.annotate("urgent\nserved soon", xy=(0.3 + 1 * 1.0 + 0.43, 0.84), xytext=(3.0, 1.02),
+                 fontsize=7.2, color=GREEN, ha="center",
+                 arrowprops=dict(arrowstyle="->", color=GREEN, lw=1.2))
+    axA.add_patch(Rectangle((9.7, 1.04), 0.3, 0.22, fc=URG, ec="white"))
+    axA.text(10.1, 1.15, "urgent task", fontsize=7.0, va="center", color=DARK)
+    axA.add_patch(Rectangle((9.7, 0.70), 0.3, 0.22, fc=BATCH, ec="white"))
+    axA.text(10.1, 0.81, "one client's batch", fontsize=7.0, va="center", color=DARK)
+
+    axB.text(0.0, 1.34, "(b) burst: one client submits a bulk batch — the urgent task is stuck at the back",
+             fontsize=8.6, color=DARK, fontweight="bold")
+    row(axB, 11, 10)
+    axB.annotate("urgent task stuck behind one client's\nbulk submission (head-of-line blocking)",
+                 xy=(0.3 + 10 * 1.0 + 0.43, 0.84), xytext=(5.7, 1.02),
+                 fontsize=7.2, color=RED, ha="center",
+                 arrowprops=dict(arrowstyle="->", color=RED, lw=1.3))
     fig.savefig(os.path.join(OUT, "fig_problem.pdf")); plt.close(fig)
 
 
 def fig_vtime_timeline():
-    """Educational: weighted virtual-time tags tau=k/w produce an interleaved 6:3:1 dispatch order."""
-    tags = []
-    for cls, w in [(0, 6), (5, 3), (9, 1)]:
-        for k in range(60):
-            tags.append((k / w, cls))
-    tags.sort(key=lambda t: (t[0], t[1]))
-    seq = [c for _, c in tags[:26]]
-    fig, ax = plt.subplots(figsize=(9.0, 1.7)); ax.set_xlim(0, 26); ax.set_ylim(0, 2); ax.axis("off")
+    """Educational, step by step: weighted virtual-time tags tau=k/w_c are stamped once per class, then
+    merged by smallest tau; after ten dispatch slots the service split is exactly 6:3:1, low class present."""
     cmap = {0: GREEN, 5: AMBER, 9: GREY}
-    for i, c in enumerate(seq):
-        ax.add_patch(Rectangle((i, 0.5), 0.9, 0.7, fc=cmap[c], ec="white", lw=0.6, zorder=3))
-    ax.text(13, 1.55, "dispatch slot (weights 6:3:1) — high class dominates, low class still appears",
-            ha="center", fontsize=9, color=DARK)
-    for c, lbl, x in [(0, "p0 (w=6)", 1), (5, "p5 (w=3)", 5), (9, "p9 (w=1)", 9)]:
-        ax.add_patch(Rectangle((x, 0.05), 0.4, 0.3, fc=cmap[c], ec="white"))
-        ax.text(x + 0.55, 0.2, lbl, fontsize=8, color=DARK, va="center")
+    wmap = {0: 6, 5: 3, 9: 1}
+    tags = []
+    for cls in (0, 5, 9):
+        for k in range(40):
+            tags.append((k / wmap[cls], cls, k))
+    tags.sort(key=lambda t: (t[0], t[1]))
+    N = 10
+    fig, ax = plt.subplots(figsize=(5.0, 4.6))
+    ax.set_xlim(0, 6); ax.set_ylim(2.6, 13); ax.axis("off")
+    ax.text(3.0, 12.5, r"weighted virtual-time tags  $\tau = k / w_c$", ha="center",
+            fontsize=10, color=DARK, fontweight="bold")
+    ax.text(3.0, 12.0, r"stamp each task once, then always dispatch the smallest $\tau$",
+            ha="center", fontsize=7.6, color=DARK)
+
+    # left: per-class tag streams (first six tags of each class), tau printed inside
+    ax.text(1.42, 11.45, "per-class tags", ha="center", fontsize=8, color=DARK, style="italic")
+    for col, cls in enumerate((0, 5, 9)):
+        x = 0.45 + col * 0.92
+        ax.text(x + 0.18, 11.08, f"p{cls} (w={wmap[cls]})", ha="center", fontsize=6.8,
+                color=cmap[cls], fontweight="bold")
+        for k in range(6):
+            y = 10.55 - k * 0.5
+            ax.add_patch(Rectangle((x, y), 0.36, 0.42, fc=cmap[cls], ec="white", lw=0.5, zorder=3))
+            ax.text(x + 0.18, y + 0.21, f"{k / wmap[cls]:.2f}", ha="center", va="center",
+                    fontsize=5.4, color="white")
+
+    ax.annotate("", xy=(4.05, 9.7), xytext=(2.55, 9.7),
+                arrowprops=dict(arrowstyle="-|>", color=DARK, lw=1.6))
+    ax.text(3.3, 10.15, r"merge by" + "\n" + r"smallest $\tau$", ha="center", fontsize=7.0, color=DARK)
+
+    # right: dispatch order (top = first out), tau and slot index labelled
+    ax.text(4.55, 11.45, "dispatch order", ha="center", fontsize=8, color=DARK, style="italic")
+    tally = {0: 0, 5: 0, 9: 0}
+    for i in range(N):
+        tau, cls, k = tags[i]
+        tally[cls] += 1
+        y = 10.6 - i * 0.62
+        ax.add_patch(Rectangle((4.25, y), 0.6, 0.5, fc=cmap[cls], ec="white", lw=0.6, zorder=3))
+        ax.text(4.55, y + 0.25, f"{tau:.2f}", ha="center", va="center", fontsize=5.8, color="white")
+        ax.text(5.0, y + 0.25, f"#{i + 1}", ha="left", va="center", fontsize=6.2, color=DARK)
+    # explanatory note filling the otherwise-empty left-bottom area
+    note = ["Why it works:", r"heavier class $\to$ smaller $\tau$ steps,",
+            "so it reaches the front more often;", r"every task still gets a finite $\tau$,",
+            "so no class is ever starved."]
+    for j, ln in enumerate(note):
+        ax.text(0.35, 7.15 - j * 0.46, ln, ha="left", fontsize=7.0,
+                color=DARK, fontweight="bold" if j == 0 else "normal")
+    ax.text(3.0, 4.35, f"after {N} slots:  p0:p5:p9 $=$ {tally[0]}:{tally[5]}:{tally[9]}",
+            ha="center", fontsize=8.2, color=DARK, fontweight="bold")
+
+    for c, x in [(0, 0.45), (5, 2.25), (9, 4.05)]:
+        ax.add_patch(Rectangle((x, 3.05), 0.3, 0.3, fc=cmap[c], ec="white"))
+        ax.text(x + 0.42, 3.2, f"p{c} (w={wmap[c]})", fontsize=6.8, va="center", color=DARK)
     fig.savefig(os.path.join(OUT, "fig_vtime.pdf")); plt.close(fig)
 
 
@@ -373,5 +439,5 @@ if __name__ == "__main__":
     fig_operation(); fig_architecture(); fig_problem(); fig_vtime_timeline(); fig_algo_flow()
     fig_starvation(); fig_pareto_starv(); fig_weights(); fig_perclass(); fig_adaptive()
     fig_datacenter(); fig_scalability(); fig_sensitivity(); fig_jain()
-    fig_traces(); fig_traces_speedup(); fig_activation()
+    fig_traces(); fig_activation()  # fig_traces_speedup retired -> figures/not_used_anymore/ (kept for future)
     print("figures written to", OUT)

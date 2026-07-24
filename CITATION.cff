@@ -1,0 +1,50 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task Scheduling (CloudSim Plus)"
+type: software
+version: 1.0.0
+license: Apache-2.0
+repository-code: "https://github.com/VitorDaSilvaUdL/colapri-cloud-scheduler"
+authors:
+  - family-names: "da Silva"
+    given-names: "Vitor Luiz"
+    orcid: "https://orcid.org/0000-0002-3296-2752"
+    affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
+  - family-names: "Tomás"
+    given-names: "Rosa Ana"
+    orcid: "https://orcid.org/0000-0002-1995-3974"
+    affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
+  - family-names: "Guirado"
+    given-names: "Fernando"
+    orcid: "https://orcid.org/0000-0003-1352-9555"
+    affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
+  - family-names: "Giné"
+    given-names: "Francesc"
+    orcid: "https://orcid.org/0000-0002-2348-5018"
+    affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
+keywords:
+  - cloud computing
+  - task scheduling
+  - weighted fair queuing
+  - priority scheduling
+  - starvation
+  - CloudSim Plus
+preferred-citation:
+  type: article
+  title: "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task Scheduling, Evaluated in CloudSim Plus"
+  authors:
+    - family-names: "da Silva"
+      given-names: "Vitor Luiz"
+      orcid: "https://orcid.org/0000-0002-3296-2752"
+    - family-names: "Tomás"
+      given-names: "Rosa Ana"
+      orcid: "https://orcid.org/0000-0002-1995-3974"
+    - family-names: "Guirado"
+      given-names: "Fernando"
+      orcid: "https://orcid.org/0000-0003-1352-9555"
+    - family-names: "Giné"
+      given-names: "Francesc"
+      orcid: "https://orcid.org/0000-0002-2348-5018"
+  journal: "Simulation Modelling Practice and Theory"
+  year: 2026
+  notes: "Under review. DOI to be added on acceptance."

@@ -1,0 +1,44 @@
+##########################################################################
+#  EXP-A · ColaPri rigorous scheduling eval (W1 synthetic, 30 seeds, CI95)
+#  overhead = wall time of sim.start() (proxy for scheduling decision cost)
+##########################################################################
+
+=== MAIN · 60 tareas, ráfaga 5/s, clases 0/5/9 (mix 3:2:1), 30 seeds ===
+
+scheduler               resp.p0        resp.p5        resp.p9   waitMAX.p9   starv.p9      Jain overhead.ms
+FCFS                  114.4±3.6      118.3±5.5      124.5±8.2    214.5±4.7    8.3±0.9   0.7±0.0     3.2±3.8
+SJF                   106.7±3.8      105.9±4.6      108.9±7.6   209.9±10.5    7.6±0.7   0.7±0.0     2.4±1.2
+StrictPriority         63.4±2.5      155.7±4.3      210.6±5.7    229.0±2.2    9.0±0.9   0.9±0.0     1.7±0.5
+Priority+Aging         63.4±2.5      155.7±4.3      210.6±5.7    229.0±2.2    9.0±0.9   0.9±0.0     1.8±0.6
+WFQ-fair              141.4±3.1      101.4±4.8       61.9±6.2   105.8±11.4    7.2±0.9   0.6±0.0     1.7±0.7
+DFPO                  122.0±4.1      108.7±5.8     104.4±10.1   186.8±14.2    7.9±0.9   0.7±0.0     1.7±0.5
+ColaPri               106.3±3.9      117.0±5.6      139.5±9.8    221.0±8.2    8.0±0.9   0.8±0.0     1.7±0.5
+  (resp por clase: FCFS≈plano · Strict≈extremo · ColaPri≈graduado p0<p5<p9 · Jain alto=mejor)
+
+
+=== STARVATION (aislada, llegadas SOSTENIDAS) · 200 tareas 90% p0 + 10% p9, 0.6/s, 30 seeds ===
+  (rate≈capacidad → p0 fresco llega mientras p9 viejo espera; foco: espera MÁX / inanidos p9)
+
+scheduler            waitMAX.p9     starv.p9 resp.p0(coste)
+FCFS                 465.2±10.9     18.0±1.7      248.3±2.5
+SJF                  680.4±22.5     10.7±1.3      215.9±2.8
+StrictPriority       721.0±10.0     18.7±1.8      212.0±4.3
+Priority+Aging        519.6±4.3     18.8±1.7      238.5±2.5
+WFQ-fair                8.2±1.3      0.0±0.0      275.7±3.5
+DFPO                  50.8±18.1      5.3±2.6      273.2±2.9
+ColaPri              239.5±46.9     14.2±2.5      262.1±3.1
+  (Strict: waitMAX.p9 explota · ColaPri: acotada, manteniendo resp.p0 baja)
+
+
+=== ADAPTIVE (umbral=15) · carga BAJA vs ALTA, 30 seeds ===
+
+  carga BAJA (sin backlog):
+    FCFS             resp.p0=12.6±0.7       resp.p9=12.3±1.0      
+    ColaPri(adapt)   resp.p0=12.6±0.7       resp.p9=12.3±1.0      
+
+  carga ALTA (ráfaga, backlog):
+    FCFS             resp.p0=153.3±3.6      resp.p9=150.2±3.8     
+    ColaPri(adapt)   resp.p0=93.3±4.0       resp.p9=207.7±2.8     
+  (BAJA: ColaPri≈FCFS, p0≈p9 → no diferencia, coste cero · ALTA: p0<p9 → se activa)
+
+#  FIN EXP-A.

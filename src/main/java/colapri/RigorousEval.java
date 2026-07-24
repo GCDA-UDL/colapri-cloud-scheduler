@@ -151,6 +151,7 @@ public class RigorousEval {
         m.put("StrictPriority", CloudletSchedulerStrictPriority::new);
         m.put("Priority+Aging", () -> new CloudletSchedulerPriorityAging(0.2));  // tuned so aging actually fires (0.05 degenerates to strict)
         m.put("WFQ-fair", CloudletSchedulerWFQ::new);   // fair-share baseline (CFS replacement; CFS hangs on backlog)
+        m.put("DFPO", () -> new CloudletSchedulerDFPO(3, 2, 1));  // Saxena et al. 2016 baseline: 3 queues, WRR quanta 3:2:1
         if (INCLUDE_CFS) m.put("CFS", CloudletSchedulerCompletelyFair::new);
         m.put("ColaPri", () -> new CloudletSchedulerColaPri()
             .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));

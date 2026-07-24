@@ -39,14 +39,29 @@ Each is a `main` class; select it with `-Dexec.mainClass=colapri.<Class>`.
 
 | Class | Experiment | What it shows |
 |-------|------------|---------------|
-| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | starvation / differentiation / adaptive, 6 schedulers |
+| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | starvation / differentiation / adaptive, 7 schedulers |
 | `DatacenterEval`   | EXP-B · multi-host, 16 VMs (20 seeds) | 4 mapping policies × {default, ColaPri} |
 | `ScalabilityEval`  | EXP-C · 200/500/1000 cloudlets (10 seeds) | makespan, per-class response, overhead vs. scale |
 | `SensitivityEval`  | EXP-D · parameter sweeps (30 seeds) | weight ratio, adaptive threshold, load, PEs |
 | `RealTraceRigorous`| EXP-E · 5 real traces (20 seeds) | per-class response on PlanetLab/Alibaba/Bitbrains/Materna/Azure |
-| `ActivationEval`   | EXP-F · automatic activation (train/test) | always-on / fixed / analytic / fuzzy / learned threshold |
+| `ActivationEval`   | EXP-F · automatic activation (10 train + 20 test seeds) | always-on / fixed / analytic / fuzzy / learned threshold |
 
-All metrics are reported as mean ± 95% CI.
+All metrics are reported as mean ± 95% CI. **`results/EXP-{A..F}.log`** are the captured logs behind
+every table in the paper. Simulated metrics (response, waiting, makespan) are seed-deterministic —
+re-running reproduces them bit-identically; only the wall-clock `overhead.ms` column varies with the
+host (reference host: Intel Core i7-14700KF, 32 GB RAM, Windows 11, Docker, Temurin JDK 21).
+Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
+
+### Seeds / paper-table manifest
+
+| Experiment | Seeds | Feeds |
+|---|---|---|
+| EXP-A | 0–29 (30) | per-class + starvation tables/figures, abstract's 1.7 ms |
+| EXP-B | 0–19 (20) | datacenter mapping×scheduler table |
+| EXP-C | 0–9 (10) | scalability table |
+| EXP-D | 0–29 (30) | weight-ratio / threshold / load / PEs sweeps |
+| EXP-E | 0–19 (20) | production-trace table (priority = burstiness tertiles per subsample) |
+| EXP-F | train 0–9, test 10–29 | activation-policy table + θ sweep |
 
 ### Self-tuning activation (EXP-F)
 
@@ -58,7 +73,11 @@ hand-tuned fixed θ within CI — so **no ML is needed** to tune ColaPri.
 
 ### Real traces (EXP-E)
 
-Trace data is **not bundled** (third-party datasets). Mount a directory at `/traces` with this layout
+PlanetLab (`data/planetlab/`), Bitbrains and Materna (`data/bitbrains/`, `data/materna/`; GWA — free
+for research with citation) are bundled; see `data/PROVENANCE.md`. Alibaba and Azure are third-party
+datasets **not bundled** — `data/checksums.sha256` pins the SHA-256 of
+every exact input file used in the paper, and `data/PROVENANCE.md` documents origins, licenses and the
+derivation of the 100-VM subsets. Mount a directory at `/traces` with this layout
 (CPU-utilisation series; the loader derives a priority class from each VM's burstiness):
 
 ```
@@ -88,6 +107,7 @@ docker run --rm -v "$PWD:/workspace" -v "/path/to/traces:/traces" -v colapri_m2:
 | `CloudletSchedulerPriorityAging`  | priority + aging (ad-hoc anti-starvation) |
 | `CloudletSchedulerSJF`            | shortest-job-first |
 | `CloudletSchedulerWFQ`            | equal-weight weighted fair queuing (fair-share reference) |
+| `CloudletSchedulerDFPO`           | DFPO (Saxena et al. 2016): three buckets, weighted-RR quanta 3:2:1 — closest weighted baseline |
 | `VmMappers`                       | RoundRobin / Min-Min / Max-Min / Demand-Aware task→VM mapping |
 
 > Note: CloudSim Plus's built-in `CloudletSchedulerCompletelyFair` hangs under a sustained staggered
@@ -104,17 +124,22 @@ python figures/make_figures.py   # requires matplotlib
 ## Repository layout
 
 ```
-src/main/java/colapri/   schedulers, mappers, metrics, seeded workload, trace loader, 5 experiment harnesses
+src/main/java/colapri/   schedulers (ColaPri + 6 baselines), mappers, metrics, seeded workload,
+                         trace loader, 6 experiment harnesses
+results/                 captured logs (EXP-A..F) behind every table in the paper
+data/                    bundled PlanetLab traces + checksums.sha256 + PROVENANCE.md
+scripts/run_all.sh       one-command reproduction of all experiments
 figures/                 make_figures.py + generated PDFs
 pom.xml                  Maven build (CloudSim Plus 8.5.7, Java 17)
+CITATION.cff, .zenodo.json   citation + Zenodo deposit metadata
 ```
 
 ## Citation
 
 ```bibtex
 @article{colapri,
-  title  = {ColaPri: a Class-Oriented Load-Adaptive Priority Scheduler with Starvation
-            Guarantees for Cloud Task Scheduling, Evaluated in CloudSim Plus},
+  title  = {ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler
+            for Cloud Task Scheduling, Evaluated in CloudSim Plus},
   author = {da Silva, V{\'i}tor and others},
   year   = {2026}
 }

@@ -1,0 +1,15 @@
+##########################################################################
+#  EXP-C · Scalability (4 hosts, 16 VMs, RoundRobin, 10 seeds, CI95)
+##########################################################################
+
+config                     makespan      resp.p0      resp.p9  overhead.ms
+200/default                54.5±1.7     25.3±0.7     25.3±1.8    22.0±17.9
+200/ColaPri                54.4±1.6     24.2±0.6     27.2±1.8     14.4±4.0
+500/default               136.8±2.1     64.9±1.1     64.8±1.3     10.3±2.7
+500/ColaPri               136.8±2.1     58.3±1.5     78.0±2.6     15.0±1.9
+1000/default              270.0±1.9    129.9±1.7    131.0±3.1     20.0±1.9
+1000/ColaPri              270.0±2.1    113.3±1.8    165.6±2.7     47.8±5.8
+
+  (ColaPri mantiene diferenciación p0<p9 a toda escala; overhead crece poco → barato vs DRL)
+
+#  FIN EXP-C.

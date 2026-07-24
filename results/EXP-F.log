@@ -1,0 +1,28 @@
+##########################################################################
+#  EXP-F · ColaPri AUTOMATIC activation (non-stationary load: calm->storm->calm)
+#  cost = resp.p0 + 10*starv.p9   (low = fast high-class, no low-class starvation)
+##########################################################################
+
+Learned alpha by backlog bucket [each 12 tasks]: [0.0, 0.0, 0.0, 0.75, 0.75, 1.0]
+
+[fixed-theta sweep over TEST seeds] theta -> cost
+  theta=0   -> cost 811.1
+  theta=5   -> cost 807.5
+  theta=10  -> cost 793.6
+  theta=20  -> cost 776.4
+  theta=40  -> cost 769.6
+  best fixed theta = 40 (cost 769.6)
+
+(TEST seeds 10..29, mean+/-CI95)
+policy                      resp.p0      resp.p9    waitMAX.p9   starv.p9 overhead.ms       cost
+always-on                 257.1±6.6    479.2±7.9     663.0±6.8   55.4±2.6     4.5±1.0 811.1±20.6
+fixed(theta=15)           289.2±8.4   400.8±14.8     661.2±6.2   49.0±2.7     3.4±0.8 779.2±20.2
+best-fixed(theta=40)      295.1±7.5   386.4±14.1     658.2±5.7   47.5±2.6     2.5±0.1 769.6±19.7
+analytic(20,50)           294.2±8.1   388.4±13.6     659.4±5.8   46.8±2.7     2.8±0.2 761.7±21.1
+fuzzy(20,50)              256.9±7.0   480.0±10.2     661.4±6.2   54.8±2.5     2.7±0.2 804.9±19.6
+learned(lookup)           294.5±8.0   387.5±13.9     658.5±5.9   47.8±2.7     2.7±0.1 772.5±20.2
+
+  (always-on penaliza la calma; fixed mal-ajusta una fase; analytic/fuzzy/learned
+   adaptan por fase -> menor coste sin entrenar (analytic/fuzzy) o con lookup barato)
+
+#  FIN EXP-F.
