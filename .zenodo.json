@@ -6,7 +6,7 @@
   "creators": [
     {"name": "da Silva, Vitor Luiz", "orcid": "0000-0002-3296-2752", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
     {"name": "Tomás, Rosa Ana", "orcid": "0000-0002-1995-3974", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
-    {"name": "Oliva, Joaquim", "affiliation": "University of Lleida"},
+    {"name": "Oliva, Joaquim", "orcid": "0009-0006-2645-6008", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
     {"name": "Guirado, Fernando", "orcid": "0000-0003-1352-9555", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"}
   ],
   "keywords": ["cloud computing", "task scheduling", "weighted fair queuing", "priority scheduling", "starvation", "CloudSim Plus", "simulation", "replication package"],

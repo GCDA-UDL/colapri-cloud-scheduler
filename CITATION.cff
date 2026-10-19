@@ -16,7 +16,8 @@ authors:
     affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
   - family-names: "Oliva"
     given-names: "Joaquim"
-    affiliation: "University of Lleida"   # TODO: add ORCID and department before the Zenodo deposit
+    orcid: "https://orcid.org/0009-0006-2645-6008"
+    affiliation: "Department of Computer Engineering and Digital Design, University of Lleida"
   - family-names: "Guirado"
     given-names: "Fernando"
     orcid: "https://orcid.org/0000-0003-1352-9555"
@@ -40,6 +41,7 @@ preferred-citation:
       orcid: "https://orcid.org/0000-0002-1995-3974"
     - family-names: "Oliva"
       given-names: "Joaquim"
+      orcid: "https://orcid.org/0009-0006-2645-6008"
     - family-names: "Guirado"
       given-names: "Fernando"
       orcid: "https://orcid.org/0000-0003-1352-9555"
