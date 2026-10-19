@@ -1,7 +1,21 @@
-# ColaPri — Class-Oriented Load-Adaptive Priority scheduler
+# ColaPri — Class-Oriented Load-Adaptive Priority scheduler (reproduction package)
+
+[![License: Apache-2.0](https://img.shields.io/badge/License-Apache--2.0-blue.svg)](LICENSE)
+![Reproducible with Docker](https://img.shields.io/badge/reproducible-Docker-2496ED.svg)
+<!-- After the Zenodo deposit add: [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.XXXXXXX.svg)](https://doi.org/10.5281/zenodo.XXXXXXX) -->
+
+Reproducible code, experiment harnesses, captured results and trace provenance for the paper:
+
+> **ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task
+> Scheduling, Evaluated in CloudSim Plus** (submitted to *Simulation Modelling Practice and Theory*).
+
+**Authors:** Vitor L. da Silva, Rosa Ana Tomás, Joaquim Oliva, Fernando Guirado — Department of Computer
+Engineering and Digital Design, University of Lleida (UdL), Spain.
+Canonical repository: [GCDA-UDL/colapri-cloud-scheduler](https://github.com/GCDA-UDL/colapri-cloud-scheduler)
+(mirror: `VitorDaSilvaUdL/colapri-cloud-scheduler`). Step-by-step instructions: [REPRODUCE.md](REPRODUCE.md).
 
 A weighted-fair cloud **task scheduler** for [CloudSim Plus](https://cloudsimplus.org), with three
-properties evaluated rigorously (30 seeds, 95% CI):
+properties evaluated rigorously (up to 30 seeds, 95% CI):
 
 1. **No starvation** — bounds the waiting time of low-priority classes (**−67%** max-wait vs. strict priority).
 2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.6**).
@@ -24,7 +38,11 @@ CloudSim Plus 8.5.7 is pulled automatically as a Maven dependency.
 ## Quick start
 
 ```bash
-# Option A — Docker (Maven + JDK 21 image); -v m2 caches dependencies between runs
+# Option A — Docker Compose (builds the image once, dependencies pre-fetched)
+docker compose build
+docker compose run --rm sim RigorousEval          # EXP-A; any other experiment main class works too
+
+# Option A' — stock Maven image, no build step; -v m2 caches dependencies between runs
 docker run --rm -v "$PWD:/workspace" -v colapri_m2:/root/.m2 -w /workspace \
   maven:3.9-eclipse-temurin-21 \
   mvn -q compile exec:java -Dexec.mainClass=colapri.RigorousEval
@@ -127,25 +145,31 @@ python figures/make_figures.py   # requires matplotlib
 
 ```
 src/main/java/colapri/   schedulers (ColaPri + 7 baselines), mappers, metrics, seeded workload,
-                         trace loader, 6 experiment harnesses
+                         trace loader, 6 experiment harnesses, CfsProbe
 results/                 captured logs (EXP-A..F) behind every table in the paper
-data/                    bundled PlanetLab traces + checksums.sha256 + PROVENANCE.md
-scripts/run_all.sh       one-command reproduction of all experiments
+data/                    bundled PlanetLab / Bitbrains / Materna subsets + checksums.sha256 + PROVENANCE.md
+scripts/run_all.sh       one-command reproduction of all experiments (stock Maven image)
+Dockerfile, docker-compose.yml   reproduction image (deps pre-fetched) and `docker compose run sim <Exp>`
+REPRODUCE.md             step-by-step reproduction guide; THIRD_PARTY.md: third-party licenses
 figures/                 make_figures.py + generated PDFs
 pom.xml                  Maven build (CloudSim Plus 8.5.7, Java 17)
-CITATION.cff, .zenodo.json   citation + Zenodo deposit metadata
+CITATION.cff, .zenodo.json, CHANGELOG.md   citation + Zenodo deposit metadata + release notes
 ```
 
 ## Citation
 
 ```bibtex
-@article{colapri,
-  title  = {ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler
-            for Cloud Task Scheduling, Evaluated in CloudSim Plus},
-  author = {da Silva, V{\'i}tor and others},
-  year   = {2026}
+@article{colapri2026,
+  title   = {ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler
+             for Cloud Task Scheduling, Evaluated in CloudSim Plus},
+  author  = {da Silva, Vitor Luiz and Tom{\'a}s, Rosa Ana and Oliva, Joaquim and Guirado, Fernando},
+  journal = {Simulation Modelling Practice and Theory},
+  year    = {2026},
+  note    = {Under review. Software: https://github.com/GCDA-UDL/colapri-cloud-scheduler (Zenodo DOI pending)}
 }
 ```
+
+See also `CITATION.cff` (machine-readable, picked up by GitHub and Zenodo).
 
 ## License
 

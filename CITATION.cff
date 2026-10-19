@@ -4,7 +4,7 @@ title: "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Schedu
 type: software
 version: 1.0.1
 license: Apache-2.0
-repository-code: "https://github.com/VitorDaSilvaUdL/colapri-cloud-scheduler"
+repository-code: "https://github.com/GCDA-UDL/colapri-cloud-scheduler"
 authors:
   - family-names: "da Silva"
     given-names: "Vitor Luiz"

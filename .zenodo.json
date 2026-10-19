@@ -11,7 +11,7 @@
   ],
   "keywords": ["cloud computing", "task scheduling", "weighted fair queuing", "priority scheduling", "starvation", "CloudSim Plus", "simulation", "replication package"],
   "related_identifiers": [
-    {"relation": "isSupplementTo", "identifier": "https://github.com/VitorDaSilvaUdL/colapri-cloud-scheduler", "resource_type": "software"}
+    {"relation": "isSupplementTo", "identifier": "https://github.com/GCDA-UDL/colapri-cloud-scheduler", "resource_type": "software"}
   ],
   "notes": "Funding: MICIU AEI/10.13039/501100011033, contract PID2023-146193OB-I00. Journal DOI to be added as related_identifier on acceptance."
 }

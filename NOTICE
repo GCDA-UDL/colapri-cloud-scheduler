@@ -4,5 +4,6 @@ Copyright 2026 Vítor da Silva
 Licensed under the Apache License, Version 2.0.
 
 This work is evaluated with CloudSim Plus (https://cloudsimplus.org), which is
-distributed separately under the Apache License 2.0 and pulled as a Maven
-dependency; its source is not included in this repository.
+distributed separately under the GNU General Public License v3 (GPLv3) and pulled
+as a Maven dependency at build time; neither its source nor its binaries are
+included in this repository. See THIRD_PARTY.md for all third-party components.

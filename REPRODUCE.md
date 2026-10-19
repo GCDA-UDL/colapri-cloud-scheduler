@@ -1,0 +1,105 @@
+# How to reproduce the experiments
+
+Everything runs inside Docker — no local Java or Maven needed. The image provides **Maven 3.9 +
+Eclipse Temurin JDK 21** and pulls **CloudSim Plus 8.5.7** as a Maven dependency; this repository
+provides ColaPri, the seven baseline schedulers, the four task-to-VM mappers, the six experiment
+harnesses and the bundled trace subsets. Experiment logs are written to `results/`.
+
+> Requirement: **Docker** (Desktop on Windows/macOS, Engine on Linux). ~1 GB free disk.
+> On Windows start Docker Desktop first; the commands below assume Git Bash or PowerShell.
+
+---
+
+## 0. Clone
+
+```bash
+git clone https://github.com/GCDA-UDL/colapri-cloud-scheduler.git
+cd colapri-cloud-scheduler
+```
+
+## 1. Build the image (first time, ~2 min)
+
+```bash
+docker compose build            # or:  docker build -t colapri-sim .
+```
+
+## 2. Run an experiment
+
+Each experiment is a `main` class; pass its name as the single argument.
+
+| Argument | Experiment | Seeds | Output |
+|----------|------------|-------|--------|
+| `RigorousEval`     | EXP-A · 1-VM scheduling: per-class, starvation, adaptive | 30 | `results/EXP-A.log` |
+| `DatacenterEval`   | EXP-B · 4 hosts / 16 VMs × 4 mapping policies | 20 | `results/EXP-B.log` |
+| `ScalabilityEval`  | EXP-C · 200 / 500 / 1000 tasks | 10 | `results/EXP-C.log` |
+| `SensitivityEval`  | EXP-D · weight ratio, threshold, load, PEs | 30 | `results/EXP-D.log` |
+| `RealTraceRigorous`| EXP-E · five production traces (needs `/traces`) | 20 | `results/EXP-E.log` |
+| `ActivationEval`   | EXP-F · self-tuning activation | 10 train + 20 test | `results/EXP-F.log` |
+
+### Linux / macOS (bash)
+
+```bash
+docker compose run --rm sim RigorousEval | tee results/EXP-A.log
+```
+
+### Windows (PowerShell)
+
+```powershell
+docker compose run --rm sim RigorousEval | Tee-Object -FilePath results\EXP-A.log
+```
+
+### Everything in one go (stock Maven image, no build step)
+
+```bash
+./scripts/run_all.sh [/absolute/path/to/traces]      # EXP-A..F, one log per experiment in results/
+```
+
+Approximate runtime on the reference host (Intel Core i7-14700KF, Windows 11, Docker Desktop):
+EXP-A and EXP-E under 30 s each; the whole matrix a few minutes.
+
+## 3. Production traces (EXP-E)
+
+`RealTraceRigorous` reads five directories under `/traces` (layout and file formats in the README):
+
+```
+/traces/planetlab/20110303/                                   bundled in data/
+/traces/bitbrains/bitbrains_rnd_2013-8_100_mostDiff_short/    bundled in data/
+/traces/materna/materna_trace1_valid_0_288_100_mostDiff/      bundled in data/
+/traces/alibaba2018/alibaba2018_fixed_first_500_100_mostDiff/ NOT bundled (see data/PROVENANCE.md)
+/traces/azure/azure_azure2019_traces_100_mostDiff/            NOT bundled (see data/PROVENANCE.md)
+```
+
+By default `docker compose` mounts `./data` at `/traces`, so PlanetLab, Bitbrains and Materna run out
+of the box and the other two are reported as missing. To run all five, assemble the directory from the
+origins listed in `data/PROVENANCE.md`, verify it with `sha256sum -c data/checksums.sha256`, and point
+`TRACES` at it:
+
+```bash
+TRACES=/path/to/traces docker compose run --rm sim RealTraceRigorous | tee results/EXP-E.log
+```
+
+## 4. Check the results against the paper
+
+The committed `results/EXP-{A..F}.log` are the captured logs behind every table and figure of the
+paper (mapping in the README, section *Seeds / paper-table manifest*). All simulated metrics —
+response, waiting, makespan, starvation counts, Jain index — are **seed-deterministic**: a re-run must
+reproduce them to the last decimal. Only the wall-clock `overhead.ms` column depends on the host.
+
+```bash
+diff <(grep -v overhead results/EXP-A.log) <(grep -v overhead /path/to/your/EXP-A.log)
+```
+
+## 5. Regenerate the figures
+
+```bash
+python figures/make_figures.py        # requires matplotlib; writes figures/*.pdf
+```
+
+The figure scripts carry the measured numbers from `results/` as literals, so they can be checked
+against the logs line by line.
+
+## 6. Strict long-term reproduction
+
+Pin the base image by digest in `Dockerfile` / `scripts/run_all.sh`
+(`maven:3.9-eclipse-temurin-21@sha256:<digest>` — `docker inspect --format '{{index .RepoDigests 0}}' maven:3.9-eclipse-temurin-21`),
+and cite the Zenodo record of the release you used (see `CITATION.cff`).

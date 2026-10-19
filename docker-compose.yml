@@ -1,0 +1,17 @@
+# One-command reproduction of the ColaPri experiments.
+#
+#   docker compose build                       # build the image once (~2 min, downloads CloudSim Plus)
+#   docker compose run --rm sim                # EXP-A (RigorousEval) -> results/EXP-A.log on stdout
+#   docker compose run --rm sim DatacenterEval # any other experiment main class
+#   TRACES=/path/to/traces docker compose run --rm sim RealTraceRigorous   # EXP-E with all five traces
+#
+# Without TRACES, the bundled subsets in ./data (PlanetLab, Bitbrains, Materna) are mounted at /traces;
+# Alibaba and Azure are then reported as missing by EXP-E (see data/PROVENANCE.md to obtain them).
+services:
+  sim:
+    build: .
+    image: colapri-sim
+    volumes:
+      - ./results:/workspace/results
+      - ${TRACES:-./data}:/traces:ro
+    command: ["RigorousEval"]
