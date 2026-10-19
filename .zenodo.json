@@ -1,13 +1,13 @@
 {
   "title": "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task Scheduling (CloudSim Plus) — replication package",
-  "description": "Replication package for the ColaPri paper: a weighted-fair cloud task scheduler with per-class weights, a provable bounded-waiting (no-starvation) guarantee and load-adaptive activation, implemented as a CloudletScheduler for CloudSim Plus 8.5.7. Includes the scheduler, six baseline schedulers (FCFS, SJF, strict priority, priority+aging, WFQ, DFPO), four task-to-VM mapping policies, all six experiment harnesses (EXP-A..F), the captured result logs behind every table in the paper, figure-generation scripts, the bundled PlanetLab traces and SHA-256 checksums plus provenance for the third-party traces (Alibaba, Bitbrains, Materna, Azure). All simulated metrics are seed-deterministic and reproduce bit-identically. This work has been granted by the Ministerio de Ciencia, Innovación y Universidades (MICIU) AEI/10.13039/501100011033 under contract PID2023-146193OB-I00.",
+  "description": "Replication package for the ColaPri paper: a weighted-fair cloud task scheduler with per-class weights, a provable bounded-waiting (no-starvation) guarantee and load-adaptive activation, implemented as a CloudletScheduler for CloudSim Plus 8.5.7. Includes the scheduler, seven baseline schedulers (FCFS, SJF, strict priority, priority+aging, equal-weight WFQ, DFPO, and start-time fair queueing with ColaPri's own weights as the classical weighted-fair control), four task-to-VM mapping policies, all six experiment harnesses (EXP-A..F), the captured result logs behind every table in the paper, figure-generation scripts, the bundled PlanetLab, Bitbrains and Materna trace subsets, and SHA-256 checksums plus provenance for the third-party traces that cannot be redistributed (Alibaba, Azure). All simulated metrics are seed-deterministic and reproduce bit-identically. This work has been granted by the Ministerio de Ciencia, Innovación y Universidades (MICIU) AEI/10.13039/501100011033 under contract PID2023-146193OB-I00.",
   "license": "Apache-2.0",
   "upload_type": "software",
   "creators": [
     {"name": "da Silva, Vitor Luiz", "orcid": "0000-0002-3296-2752", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
     {"name": "Tomás, Rosa Ana", "orcid": "0000-0002-1995-3974", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
-    {"name": "Guirado, Fernando", "orcid": "0000-0003-1352-9555", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"},
-    {"name": "Giné, Francesc", "orcid": "0000-0002-2348-5018", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"}
+    {"name": "Oliva, Joaquim", "affiliation": "University of Lleida"},
+    {"name": "Guirado, Fernando", "orcid": "0000-0003-1352-9555", "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"}
   ],
   "keywords": ["cloud computing", "task scheduling", "weighted fair queuing", "priority scheduling", "starvation", "CloudSim Plus", "simulation", "replication package"],
   "related_identifiers": [

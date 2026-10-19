@@ -5,7 +5,7 @@ properties evaluated rigorously (30 seeds, 95% CI):
 
 1. **No starvation** — bounds the waiting time of low-priority classes (**−67%** max-wait vs. strict priority).
 2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.6**).
-3. **Load-adaptive, zero-cost at light load** — below a backlog threshold it behaves as FCFS; above it, it differentiates. Scheduler overhead ≈ **1.7 ms**.
+3. **Load-adaptive, zero-cost at light load** — below a backlog threshold it behaves as FCFS; above it, it differentiates. Scheduler overhead ≈ **1.8 ms**.
 
 ColaPri is implemented as a `CloudletScheduler` using **persistent virtual-time tags** (the *k*-th arrival
 of class *c* gets tag *k/wₑ*, assigned once), which realises weighted round-robin without starvation.
@@ -39,7 +39,7 @@ Each is a `main` class; select it with `-Dexec.mainClass=colapri.<Class>`.
 
 | Class | Experiment | What it shows |
 |-------|------------|---------------|
-| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | starvation / differentiation / adaptive, 7 schedulers |
+| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | starvation / differentiation / adaptive, 8 schedulers (incl. the weighted-SFQ control) |
 | `DatacenterEval`   | EXP-B · multi-host, 16 VMs (20 seeds) | 4 mapping policies × {default, ColaPri} |
 | `ScalabilityEval`  | EXP-C · 200/500/1000 cloudlets (10 seeds) | makespan, per-class response, overhead vs. scale |
 | `SensitivityEval`  | EXP-D · parameter sweeps (30 seeds) | weight ratio, adaptive threshold, load, PEs |
@@ -56,7 +56,7 @@ Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 
 | Experiment | Seeds | Feeds |
 |---|---|---|
-| EXP-A | 0–29 (30) | per-class + starvation tables/figures, abstract's 1.7 ms |
+| EXP-A | 0–29 (30) | per-class + starvation tables/figures (incl. the weighted-SFQ control), abstract's 1.8 ms |
 | EXP-B | 0–19 (20) | datacenter mapping×scheduler table |
 | EXP-C | 0–9 (10) | scalability table |
 | EXP-D | 0–29 (30) | weight-ratio / threshold / load / PEs sweeps |
@@ -108,7 +108,9 @@ docker run --rm -v "$PWD:/workspace" -v "/path/to/traces:/traces" -v colapri_m2:
 | `CloudletSchedulerSJF`            | shortest-job-first |
 | `CloudletSchedulerWFQ`            | equal-weight weighted fair queuing (fair-share reference) |
 | `CloudletSchedulerDFPO`           | DFPO (Saxena et al. 2016): three buckets, weighted-RR quanta 3:2:1 — closest weighted baseline |
+| `CloudletSchedulerSFQ`            | start-time fair queueing (Goyal et al. 1997) with ColaPri's own weights 6:3:1 — classical weighted-FQ control (tags advance by length/weight, always on) |
 | `VmMappers`                       | RoundRobin / Min-Min / Max-Min / Demand-Aware task→VM mapping |
+| `CfsProbe`                        | probe showing that the built-in `CloudletSchedulerCompletelyFair` does not terminate under a staggered backlog (kept so the issue can be reproduced) |
 
 > Note: CloudSim Plus's built-in `CloudletSchedulerCompletelyFair` hangs under a sustained staggered
 > backlog, so the fair reference here is the clean `CloudletSchedulerWFQ`.
@@ -124,7 +126,7 @@ python figures/make_figures.py   # requires matplotlib
 ## Repository layout
 
 ```
-src/main/java/colapri/   schedulers (ColaPri + 6 baselines), mappers, metrics, seeded workload,
+src/main/java/colapri/   schedulers (ColaPri + 7 baselines), mappers, metrics, seeded workload,
                          trace loader, 6 experiment harnesses
 results/                 captured logs (EXP-A..F) behind every table in the paper
 data/                    bundled PlanetLab traces + checksums.sha256 + PROVENANCE.md

@@ -27,7 +27,7 @@ import colapri.TraceLoader.TaskSpec;
  * EXP-E: rigorous evaluation on REAL traces (Paper 4 datasets: PlanetLab, Alibaba, Bitbrains, Materna,
  * Azure). External validity for the journal: each VM's CPU series -> a cloudlet whose priority class is
  * derived from its burstiness (bursty=interactive=p0, stable=batch=p9). Per dataset, N_SEEDS random
- * subsamples (TraceLoader.sample) give mean +/- CI95 for FCFS / StrictPriority / WFQ-fair / ColaPri.
+ * subsamples (TraceLoader.sample) give mean +/- CI95 for FCFS / StrictPriority / WFQ-fair / SFQ-weighted / ColaPri.
  *
  * Traces mounted at /traces (mount networkExperiments/workloads there).
  */
@@ -58,6 +58,8 @@ public class RealTraceRigorous {
         scheds.put("FCFS", CloudletSchedulerSpaceShared::new);
         scheds.put("StrictPriority", CloudletSchedulerStrictPriority::new);
         scheds.put("WFQ-fair", CloudletSchedulerWFQ::new);
+        scheds.put("SFQ-weighted", () -> new CloudletSchedulerSFQ()     // classical weighted FQ, same weights (novelty control)
+            .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));
         scheds.put("ColaPri", () -> new CloudletSchedulerColaPri()
             .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));
 

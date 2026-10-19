@@ -27,7 +27,8 @@ import java.util.function.Supplier;
  * Upgrades Experiments.java to journal grade: N_SEEDS independent workload instances per config,
  * every metric reported as mean +/- CI95, scheduler decision OVERHEAD measured (wall time of
  * sim.start()), weighted-Jain aligned to the scheduler's class weights. Baselines: FCFS, SJF,
- * StrictPriority, Priority+Aging, (optional CFS), ColaPri.
+ * StrictPriority, Priority+Aging, WFQ-fair (equal weights), DFPO, SFQ-weighted (classical weighted
+ * fair queue with ColaPri's weights), (optional CFS), ColaPri.
  *
  * Three scenarios: MAIN comparison, STARVATION (isolated), ADAPTIVE (load-gated activation).
  */
@@ -152,6 +153,8 @@ public class RigorousEval {
         m.put("Priority+Aging", () -> new CloudletSchedulerPriorityAging(0.2));  // tuned so aging actually fires (0.05 degenerates to strict)
         m.put("WFQ-fair", CloudletSchedulerWFQ::new);   // fair-share baseline (CFS replacement; CFS hangs on backlog)
         m.put("DFPO", () -> new CloudletSchedulerDFPO(3, 2, 1));  // Saxena et al. 2016 baseline: 3 queues, WRR quanta 3:2:1
+        m.put("SFQ-weighted", () -> new CloudletSchedulerSFQ()     // classical weighted fair queue (SFQ), SAME weights as ColaPri: novelty control
+            .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));
         if (INCLUDE_CFS) m.put("CFS", CloudletSchedulerCompletelyFair::new);
         m.put("ColaPri", () -> new CloudletSchedulerColaPri()
             .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));

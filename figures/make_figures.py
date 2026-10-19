@@ -115,15 +115,15 @@ def fig_architecture():
 
 
 def fig_starvation():
-    sched = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "ColaPri"]
-    wait = [465.2, 680.4, 721.0, 519.6, 8.2, 239.5]
-    err = [10.9, 22.5, 10.0, 4.3, 1.3, 46.9]
-    colors = [GREY, GREY, AMBER, AMBER, BLUE, GREEN]
-    fig, ax = plt.subplots(figsize=(6, 3.4))
+    sched = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "DFPO", "SFQ", "ColaPri"]
+    wait = [465.2, 680.4, 721.0, 519.6, 8.2, 50.8, 260.8, 239.5]
+    err = [10.9, 22.5, 10.0, 4.3, 1.3, 18.1, 43.1, 46.9]
+    colors = [GREY, GREY, AMBER, AMBER, BLUE, BLUE, BLUE, GREEN]
+    fig, ax = plt.subplots(figsize=(6.8, 3.4))
     ax.bar(sched, wait, yerr=err, capsize=4, color=colors)
     ax.set_ylabel("max waiting, low class p9 (s)")
     ax.set_title("Starvation under sustained load (lower is better)")
-    ax.annotate("-67% vs Strict", xy=(5, 239.5), xytext=(3.4, 430),
+    ax.annotate("-67% vs Strict", xy=(7, 239.5), xytext=(4.9, 430),
                 arrowprops=dict(arrowstyle="->", color=GREEN), color=GREEN, fontweight="bold")
     fig.savefig(os.path.join(OUT, "fig_starvation.pdf"))
     plt.close(fig)
@@ -152,12 +152,12 @@ def fig_weights():
 
 
 def fig_perclass():
-    sched = ["FCFS", "SJF", "Strict", "WFQ", "ColaPri"]
-    p0 = [114.4, 106.7, 63.4, 141.4, 106.3]
-    p5 = [118.3, 105.9, 155.7, 101.4, 117.0]
-    p9 = [124.5, 108.9, 210.6, 61.9, 139.5]
+    sched = ["FCFS", "SJF", "Strict", "WFQ", "DFPO", "SFQ", "ColaPri"]
+    p0 = [114.4, 106.7, 63.4, 141.4, 122.0, 105.3, 106.3]
+    p5 = [118.3, 105.9, 155.7, 101.4, 108.7, 117.4, 117.0]
+    p9 = [124.5, 108.9, 210.6, 61.9, 104.4, 141.3, 139.5]
     x = np.arange(len(sched)); ww = 0.27
-    fig, ax = plt.subplots(figsize=(6.2, 3.4))
+    fig, ax = plt.subplots(figsize=(7.0, 3.4))
     ax.bar(x - ww, p0, ww, label="p0 (high)", color=GREEN)
     ax.bar(x, p5, ww, label="p5 (mid)", color=AMBER)
     ax.bar(x + ww, p9, ww, label="p9 (low)", color=GREY)
@@ -172,13 +172,15 @@ def fig_perclass():
 def fig_traces():
     ds = ["PlanetLab", "Alibaba", "Bitbrains", "Materna", "Azure"]
     fcfs = [40.7, 232.0, 185.5, 35.5, 40.9]
+    sfq = [23.9, 124.7, 117.3, 17.2, 26.4]
     cola = [21.0, 127.7, 108.6, 16.6, 21.8]
     strict = [10.0, 71.4, 64.7, 6.2, 10.4]
-    x = np.arange(len(ds)); ww = 0.27
-    fig, ax = plt.subplots(figsize=(6.4, 3.4))
-    ax.bar(x - ww, fcfs, ww, label="FCFS", color=GREY)
-    ax.bar(x, cola, ww, label="ColaPri", color=GREEN)
-    ax.bar(x + ww, strict, ww, label="Strict (lower bound)", color=AMBER)
+    x = np.arange(len(ds)); ww = 0.2
+    fig, ax = plt.subplots(figsize=(6.6, 3.4))
+    ax.bar(x - 1.5 * ww, fcfs, ww, label="FCFS", color=GREY)
+    ax.bar(x - 0.5 * ww, sfq, ww, label="SFQ (weighted)", color=BLUE)
+    ax.bar(x + 0.5 * ww, cola, ww, label="ColaPri", color=GREEN)
+    ax.bar(x + 1.5 * ww, strict, ww, label="Strict (lower bound)", color=AMBER)
     ax.set_xticks(x); ax.set_xticklabels(ds, rotation=15)
     ax.set_ylabel("interactive-class response p0 (s)")
     ax.set_title("Production traces: interactive-class response", fontsize=10)
@@ -307,16 +309,17 @@ def fig_vtime_timeline():
 
 def fig_pareto_starv():
     """Starvation experiment as a trade-off: resp.p0 (x) vs waitMAX.p9 (y); bottom-left is better."""
-    name = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "ColaPri"]
-    p0 = [248.3, 215.9, 212.0, 238.5, 275.7, 262.1]
-    wm = [465.2, 680.4, 721.0, 519.6, 8.2, 239.5]
-    col = [GREY, GREY, RED, AMBER, BLUE, GREEN]
-    mk = ["o", "o", "s", "s", "^", "*"]
+    name = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "DFPO", "SFQ", "ColaPri"]
+    p0 = [248.3, 215.9, 212.0, 238.5, 275.7, 273.2, 260.5, 262.1]
+    wm = [465.2, 680.4, 721.0, 519.6, 8.2, 50.8, 260.8, 239.5]
+    col = [GREY, GREY, RED, AMBER, BLUE, BLUE, BLUE, GREEN]
+    mk = ["o", "o", "s", "s", "^", "^", "D", "*"]
     fig, ax = plt.subplots(figsize=(6.2, 3.8))
     for i in range(len(name)):
         ax.scatter(p0[i], wm[i], s=190 if mk[i] == "*" else 95, c=col[i], marker=mk[i],
                    edgecolors="black", linewidths=0.5, zorder=3)
-        ax.annotate(name[i], (p0[i], wm[i]), textcoords="offset points", xytext=(7, 5), fontsize=8.5)
+        off = (-30, -14) if name[i] == "SFQ" else ((7, -12) if name[i] == "DFPO" else (7, 5))
+        ax.annotate(name[i], (p0[i], wm[i]), textcoords="offset points", xytext=off, fontsize=8.5)
     ax.set_xlabel("high-class response p0 (s)  —  lower is better")
     ax.set_ylabel("worst-case low-class wait p9 (s)  —  lower is better")
     ax.set_title("Starvation trade-off (sustained load)")
@@ -389,10 +392,10 @@ def fig_sensitivity():
 
 def fig_jain():
     """Weighted Jain fairness per scheduler (main scenario)."""
-    name = ["WFQ", "FCFS", "SJF", "ColaPri", "Strict"]
-    jain = [0.6, 0.7, 0.7, 0.8, 0.9]
-    col = [BLUE, GREY, GREY, GREEN, RED]
-    fig, ax = plt.subplots(figsize=(5.4, 3.0))
+    name = ["WFQ", "FCFS", "SJF", "DFPO", "SFQ", "ColaPri", "Aging", "Strict"]
+    jain = [0.6, 0.7, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9]
+    col = [BLUE, GREY, GREY, BLUE, BLUE, GREEN, RED, RED]
+    fig, ax = plt.subplots(figsize=(6.2, 3.0))
     ax.bar(name, jain, color=col)
     ax.set_ylabel("weighted Jain index"); ax.set_ylim(0, 1.0)
     ax.set_title("Weighted fairness (higher is better)", fontsize=10)
