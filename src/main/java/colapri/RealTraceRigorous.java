@@ -57,7 +57,8 @@ public class RealTraceRigorous {
         final Map<String, Supplier<CloudletScheduler>> scheds = new LinkedHashMap<>();
         scheds.put("FCFS", CloudletSchedulerSpaceShared::new);
         scheds.put("StrictPriority", CloudletSchedulerStrictPriority::new);
-        scheds.put("WFQ-fair", CloudletSchedulerWFQ::new);
+        scheds.put("EqualShare", CloudletSchedulerWFQ::new);   // equal share per class
+        scheds.put("PS-timeshared", org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerTimeShared::new);   // per-task processor sharing
         scheds.put("SFQ-weighted", () -> new CloudletSchedulerSFQ()     // classical weighted FQ, same weights (novelty control)
             .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));
         scheds.put("ColaPri", () -> new CloudletSchedulerColaPri()
@@ -111,12 +112,12 @@ public class RealTraceRigorous {
         new DatacenterSimple(sim, List.of(host));
         final var broker = new DatacenterBrokerSimple(sim);
         broker.setVmDestructionDelay(1_000_000.0);
-        final var vm = new VmSimple(MIPS, VM_PES);
+        final var vm = new VmPatched(MIPS, VM_PES);
         vm.setRam(8192).setBw(10_000).setSize(10_000).setCloudletScheduler(sched.get());
         broker.submitVmList(List.of(vm));
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final TaskSpec s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             c.setSubmissionDelay(s.arrival());
@@ -124,6 +125,6 @@ public class RealTraceRigorous {
         }
         broker.submitCloudletList(cloudlets);
         sim.start();
-        return broker.getCloudletFinishedList();
+        return Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size());
     }
 }

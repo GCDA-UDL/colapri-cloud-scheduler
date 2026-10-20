@@ -17,16 +17,20 @@ Canonical repository: [GCDA-UDL/colapri-cloud-scheduler](https://github.com/GCDA
 A weighted-fair cloud **task scheduler** for [CloudSim Plus](https://cloudsimplus.org), with three
 properties evaluated rigorously (up to 30 seeds, 95% CI):
 
-1. **No starvation** — bounds the waiting time of low-priority classes (**−67%** max-wait vs. strict priority).
-2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.6**).
-3. **Load-adaptive, zero-cost at light load** — below a backlog threshold it behaves as FCFS; above it, it differentiates. Scheduler overhead ≈ **1.8 ms**.
+1. **No starvation** — bounds the waiting time of low-priority classes (**−83%** max-wait vs. strict
+   priority at the default 6:1 weights, with high-class response within 3% of FCFS; the weight moves
+   ColaPri along the FCFS ↔ strict-priority frontier: 20:1 → −35%, 60:1 → −10% at +7% high-class response).
+2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.4**).
+3. **Load-adaptive, zero-cost at light load** — below a backlog threshold it behaves as FCFS; above it, it differentiates. Scheduler overhead ≈ **1.4 ms**.
 
-ColaPri is implemented as a `CloudletScheduler` using **persistent virtual-time tags** (the *k*-th arrival
-of class *c* gets tag *k/wₑ*, assigned once), which realises weighted round-robin without starvation.
-It is orthogonal to the task-to-VM mapping policy.
+ColaPri is implemented as a `CloudletScheduler` using **persistent virtual-time tags**: the *k*-th tagged
+task of class *c* gets tag *k/w_c*, assigned once, with *k* resynchronised to the frontier (largest tag
+already dispatched) when a class returns from idleness. This realises per-class virtual-clock / stride
+proportional sharing without starvation, and it is orthogonal to the task-to-VM mapping policy.
 
-> The algorithmic core is Weighted Fair Queuing / Weighted Round-Robin (WFQ, DRR, GPS; 1989–1996). The
-> contribution here is the adaptive, no-starvation, per-class formulation and a rigorous cloud evaluation.
+> The algorithmic core is classical proportional-share scheduling (WFQ, VirtualClock, DRR, WF²Q, SFQ,
+> lottery/stride; 1989–1997). The contribution here is the length-agnostic, load-adaptive, per-class
+> formulation with a per-task bound, the CloudSim Plus realisation and a rigorous cloud evaluation.
 
 ## Requirements
 
@@ -57,7 +61,7 @@ Each is a `main` class; select it with `-Dexec.mainClass=colapri.<Class>`.
 
 | Class | Experiment | What it shows |
 |-------|------------|---------------|
-| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | starvation / differentiation / adaptive, 8 schedulers (incl. the weighted-SFQ control) |
+| `RigorousEval`     | EXP-A · 1-VM scheduling (30 seeds) | per-class / starvation (with ColaPri and SFQ weight sweeps) / adaptive / idle-return (resync ablation), 9 schedulers |
 | `DatacenterEval`   | EXP-B · multi-host, 16 VMs (20 seeds) | 4 mapping policies × {default, ColaPri} |
 | `ScalabilityEval`  | EXP-C · 200/500/1000 cloudlets (10 seeds) | makespan, per-class response, overhead vs. scale |
 | `SensitivityEval`  | EXP-D · parameter sweeps (30 seeds) | weight ratio, adaptive threshold, load, PEs |
@@ -74,7 +78,7 @@ Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 
 | Experiment | Seeds | Feeds |
 |---|---|---|
-| EXP-A | 0–29 (30) | per-class + starvation tables/figures (incl. the weighted-SFQ control), abstract's 1.8 ms |
+| EXP-A | 0–29 (30) | per-class, starvation (weight sweep), adaptive and idle-return tables/figures, abstract's 1.4 ms |
 | EXP-B | 0–19 (20) | datacenter mapping×scheduler table |
 | EXP-C | 0–9 (10) | scalability table |
 | EXP-D | 0–29 (30) | weight-ratio / threshold / load / PEs sweeps |
@@ -85,9 +89,11 @@ Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 
 `ActivationPolicy` turns ColaPri's threshold into an activation degree `α ∈ [0,1]` (0 = FIFO, 1 = full
 weighted-RR), set by one of: `alwaysOn`, `fixed(θ)`, `analytic(lo,hi)` (closed-form ramp),
-`fuzzy(lo,hi)` (Mamdani), or `learned(table,width)` (offline lookup). All are O(1) and deterministic at
-inference. EXP-F shows the cheap **analytic** controller matches the offline-**learned** lookup and a
-hand-tuned fixed θ within CI — so **no ML is needed** to tune ColaPri.
+`fuzzy(lo,hi)` (zero-order Sugeno), or `learned(table,width)` (offline lookup). All are O(1) and
+deterministic at inference. Every hyper-parameter (fixed θ, ramp placement, learned table) is selected on
+the 10 training seeds and reported on the 20 test seeds. EXP-F shows the cheap **analytic** ramp is at
+least as good as the offline-**learned** lookup and better than any fixed θ — so **no ML is needed** to
+tune ColaPri.
 
 ### Real traces (EXP-E)
 
@@ -120,18 +126,23 @@ docker run --rm -v "$PWD:/workspace" -v "/path/to/traces:/traces" -v colapri_m2:
 
 | File | Role |
 |------|------|
-| `CloudletSchedulerColaPri`        | **ColaPri** (weighted virtual-time tags, adaptive threshold, no starvation) |
+| `CloudletSchedulerColaPri`        | **ColaPri** (weighted virtual-time tags with frontier resynchronisation, adaptive threshold, no starvation; `setResync(false)` = ablation) |
 | `CloudletSchedulerStrictPriority` | strict priority (anti-baseline: starves low class) |
 | `CloudletSchedulerPriorityAging`  | priority + aging (ad-hoc anti-starvation) |
 | `CloudletSchedulerSJF`            | shortest-job-first |
-| `CloudletSchedulerWFQ`            | equal-weight weighted fair queuing (fair-share reference) |
+| `CloudletSchedulerWFQ`            | equal share per class ("EqualShare" in the logs): ColaPri's tag rule with weight 1 for every class |
+| `CloudletSchedulerTimeShared` (CloudSim Plus) | per-task processor sharing ("PS-timeshared" in the logs): the simulator's built-in fair reference |
 | `CloudletSchedulerDFPO`           | DFPO (Saxena et al. 2016): three buckets, weighted-RR quanta 3:2:1 — closest weighted baseline |
 | `CloudletSchedulerSFQ`            | start-time fair queueing (Goyal et al. 1997) with ColaPri's own weights 6:3:1 — classical weighted-FQ control (tags advance by length/weight, always on) |
 | `VmMappers`                       | RoundRobin / Min-Min / Max-Min / Demand-Aware task→VM mapping |
 | `CfsProbe`                        | probe showing that the built-in `CloudletSchedulerCompletelyFair` does not terminate under a staggered backlog (kept so the issue can be reproduced) |
+| `CapacityProbe`                   | probe for the v1.0.x defect: cloudlets with `UtilizationModelFull` for RAM/BW are throttled to one PE and one per VM may never finish (kept as evidence) |
+| `VmPatched`                       | `VmSimple` with a two-line workaround for a CloudSim Plus 8.5.7 corner case (`updateProcessing` returning 0 ends the simulation with cloudlets queued); every harness uses it and asserts that all submitted cloudlets finish (`Metrics.checked`) |
+| `Workload.cloudlet(len)`          | factory for CPU-bound cloudlets (RAM/BW demand 1% of the VM) used by every harness |
 
 > Note: CloudSim Plus's built-in `CloudletSchedulerCompletelyFair` hangs under a sustained staggered
-> backlog, so the fair reference here is the clean `CloudletSchedulerWFQ`.
+> backlog, so the fair references here are `CloudletSchedulerTimeShared`, `CloudletSchedulerWFQ`
+> (equal share per class) and the weighted `CloudletSchedulerSFQ` control.
 
 ## Figures
 

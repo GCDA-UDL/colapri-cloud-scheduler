@@ -37,14 +37,14 @@ public class CfsProbe {
 
         final var broker = new DatacenterBrokerSimple(sim);
         broker.setVmDestructionDelay(100_000.0);
-        final var vm = new VmSimple(1000, 2);
+        final var vm = new VmPatched(1000, 2);
         vm.setRam(4096).setBw(10_000).setSize(10_000)
           .setCloudletScheduler(new CloudletSchedulerCompletelyFair());
         broker.submitVmList(List.of(vm));
 
         final var cloudlets = new ArrayList<Cloudlet>(40);
         for (int i = 0; i < 40; i++) {
-            final var c = new CloudletSimple(4000, 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(4000);
             c.setSizes(1024);
             c.setPriority(i % 3 == 0 ? 0 : (i % 3 == 1 ? 5 : 9));
             c.setSubmissionDelay(i * 0.2);   // staggered -> backlog

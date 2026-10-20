@@ -74,14 +74,14 @@ public class ScalabilityEval {
         broker.setVmDestructionDelay(1_000_000.0);
         final var vms = new ArrayList<Vm>(VMS);
         for (int i = 0; i < VMS; i++) {
-            final var vm = new VmSimple(MIPS, VM_PES);
+            final var vm = new VmPatched(MIPS, VM_PES);
             vm.setRam(2048).setBw(1000).setSize(10_000).setCloudletScheduler(schedFactory.get());
             vms.add(vm);
         }
         broker.submitVmList(vms);
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final var s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             cloudlets.add(c);
@@ -92,7 +92,7 @@ public class ScalabilityEval {
         final long t0 = System.nanoTime();
         sim.start();
         final double wallMs = (System.nanoTime() - t0) / 1e6;
-        final var f = broker.getCloudletFinishedList();
+        final var f = Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size());
         return new double[]{Metrics.makespan(f), Metrics.meanResponseOfClass(f, 0), Metrics.meanResponseOfClass(f, 9), wallMs};
     }
 

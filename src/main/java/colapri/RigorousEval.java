@@ -12,6 +12,7 @@ import org.cloudsimplus.resources.PeSimple;
 import org.cloudsimplus.schedulers.cloudlet.CloudletScheduler;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerCompletelyFair;
 import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerSpaceShared;
+import org.cloudsimplus.schedulers.cloudlet.CloudletSchedulerTimeShared;
 import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
 import org.cloudsimplus.vms.VmSimple;
 
@@ -57,6 +58,7 @@ public class RigorousEval {
         scenarioMain();
         scenarioStarvation();
         scenarioAdaptive();
+        scenarioIdleReturn();
 
         System.out.println("\n#  FIN EXP-A.");
         System.out.flush();
@@ -102,6 +104,10 @@ public class RigorousEval {
         System.out.println("\n\n=== STARVATION (aislada, llegadas SOSTENIDAS) · 200 tareas 90% p0 + 10% p9, 0.6/s, 30 seeds ===");
         System.out.println("  (rate≈capacidad → p0 fresco llega mientras p9 viejo espera; foco: espera MÁX / inanidos p9)");
         final var schedulers = schedulers();
+        // weight sweep: the per-class weight moves ColaPri along the FCFS <-> strict-priority frontier
+        schedulers.put("ColaPri(20:1)", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 20).setPriorityWeight(9, 1));
+        schedulers.put("ColaPri(60:1)", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 60).setPriorityWeight(9, 1));
+        schedulers.put("SFQ(60:1)", () -> new CloudletSchedulerSFQ().setPriorityWeight(0, 60).setPriorityWeight(9, 1));
         final Map<String, List<Double>> waitMaxLow = init(schedulers), starvLow = init(schedulers), respHigh = init(schedulers);
         for (long seed = 0; seed < N_SEEDS; seed++) {
             final var w = Workload.seeded(seed, 200, 0.6, new int[]{0, 9}, new int[]{9, 1}, BASE_LEN, 0.3, 0.2);
@@ -144,6 +150,36 @@ public class RigorousEval {
         System.out.println("  (BAJA: ColaPri≈FCFS, p0≈p9 → no diferencia, coste cero · ALTA: p0<p9 → se activa)");
     }
 
+    // ---- IDLE RETURN: a low class that was idle returns while the high class is backlogged ----
+    private static void scenarioIdleReturn() {
+        System.out.println("\n\n=== IDLE-RETURN · clase 0 sostenida 0.6/s (300 tareas) + clase 9 inactiva hasta t=300 s, luego ráfaga de 20 a 5/s, 30 seeds ===");
+        System.out.println("  (maxRun.p9 = racha máxima de arranques consecutivos de p9; resp.p0[300,380) = respuesta de las p0 que llegan durante la ráfaga)");
+        final Map<String, Supplier<CloudletScheduler>> m = new LinkedHashMap<>();
+        m.put("FCFS", CloudletSchedulerSpaceShared::new);
+        m.put("StrictPriority", CloudletSchedulerStrictPriority::new);
+        m.put("SFQ-weighted", () -> new CloudletSchedulerSFQ().setPriorityWeight(0, 6).setPriorityWeight(9, 1));
+        m.put("ColaPri(no-sync)", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(9, 1).setResync(false));
+        m.put("ColaPri", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(9, 1));
+        final Map<String, List<Double>> maxRun = init(m), respHighWin = init(m), respLow = init(m), waitMaxLow = init(m);
+        for (long seed = 0; seed < N_SEEDS; seed++) {
+            final var high = Workload.seeded(seed, 300, 0.6, new int[]{0}, new int[]{1}, BASE_LEN, 0.3, 0.2);
+            final var burst = Workload.seeded(seed + 500, 20, 5.0, new int[]{9}, new int[]{1}, BASE_LEN, 0.3, 0.2);
+            final var w = new ArrayList<Workload.Spec>(high);
+            for (final var s : burst) w.add(new Workload.Spec(s.arrival() + 300.0, s.priority(), s.length()));
+            for (final var e : m.entrySet()) {
+                final var f = run(e.getValue(), w, false).finished();
+                maxRun.get(e.getKey()).add((double) Metrics.maxConsecutiveStarts(f, 9));
+                respHighWin.get(e.getKey()).add(Metrics.meanResponseOfClassArrivingIn(f, 0, 300.0, 380.0));
+                respLow.get(e.getKey()).add(Metrics.meanResponseOfClass(f, 9));
+                waitMaxLow.get(e.getKey()).add(Metrics.maxWaitOfClass(f, 9));
+            }
+        }
+        System.out.printf("%n%-16s %12s %18s %14s %14s%n", "scheduler", "maxRun.p9", "resp.p0[300,380)", "resp.p9", "waitMAX.p9");
+        for (final String k : m.keySet())
+            System.out.printf("%-16s %12s %18s %14s %14s%n", k, ci(maxRun.get(k)), ci(respHighWin.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)));
+        System.out.println("  (sin resincronización la clase que vuelve acapara una racha larga y retrasa a p0; con resincronización se intercala 6:1)");
+    }
+
     // ---- infra ----
     private static Map<String, Supplier<CloudletScheduler>> schedulers() {
         final Map<String, Supplier<CloudletScheduler>> m = new LinkedHashMap<>();
@@ -151,7 +187,8 @@ public class RigorousEval {
         m.put("SJF", CloudletSchedulerSJF::new);
         m.put("StrictPriority", CloudletSchedulerStrictPriority::new);
         m.put("Priority+Aging", () -> new CloudletSchedulerPriorityAging(0.2));  // tuned so aging actually fires (0.05 degenerates to strict)
-        m.put("WFQ-fair", CloudletSchedulerWFQ::new);   // fair-share baseline (CFS replacement; CFS hangs on backlog)
+        m.put("EqualShare", CloudletSchedulerWFQ::new);   // equal share per CLASS (virtual-time tags, weight 1 for every class)
+        m.put("PS-timeshared", CloudletSchedulerTimeShared::new);   // CloudSim Plus built-in processor sharing per TASK (fair reference)
         m.put("DFPO", () -> new CloudletSchedulerDFPO(3, 2, 1));  // Saxena et al. 2016 baseline: 3 queues, WRR quanta 3:2:1
         m.put("SFQ-weighted", () -> new CloudletSchedulerSFQ()     // classical weighted fair queue (SFQ), SAME weights as ColaPri: novelty control
             .setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1));
@@ -181,12 +218,12 @@ public class RigorousEval {
         if (schedInterval) dc.setSchedulingInterval(1.0);   // needed for CFS to terminate
         final var broker = new DatacenterBrokerSimple(sim);
         broker.setVmDestructionDelay(100_000.0);
-        final var vm = new VmSimple(MIPS, VM_PES);
+        final var vm = new VmPatched(MIPS, VM_PES);
         vm.setRam(4096).setBw(10_000).setSize(10_000).setCloudletScheduler(factory.get());
         broker.submitVmList(List.of(vm));
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final var s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             c.setSubmissionDelay(s.arrival());
@@ -196,6 +233,6 @@ public class RigorousEval {
         final long t0 = System.nanoTime();
         sim.start();
         final double wallMs = (System.nanoTime() - t0) / 1e6;
-        return new Result(broker.getCloudletFinishedList(), wallMs);
+        return new Result(Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size()), wallMs);
     }
 }

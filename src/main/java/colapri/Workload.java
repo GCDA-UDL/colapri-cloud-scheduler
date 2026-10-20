@@ -1,5 +1,9 @@
 package colapri;
 
+import org.cloudsimplus.cloudlets.CloudletSimple;
+import org.cloudsimplus.utilizationmodels.UtilizationModelDynamic;
+import org.cloudsimplus.utilizationmodels.UtilizationModelFull;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -40,5 +44,14 @@ public final class Workload {
             specs.add(new Spec(arr, pri, len));
         }
         return specs;
+    }
+    /** CPU-bound cloudlet: 100% CPU of one PE, negligible RAM/BW demand. (Using UtilizationModelFull for
+     *  RAM and BW as well made CloudSim Plus serialise the VM's PEs under a backlog and drop one cloudlet
+     *  per VM -- audit finding C-01, 2026-10-20.) */
+    public static CloudletSimple cloudlet(final long length) {
+        final var c = new CloudletSimple(length, 1, new UtilizationModelFull());
+        c.setUtilizationModelRam(new UtilizationModelDynamic(0.01));
+        c.setUtilizationModelBw(new UtilizationModelDynamic(0.01));
+        return c;
     }
 }

@@ -86,8 +86,14 @@ response, waiting, makespan, starvation counts, Jain index — are **seed-determ
 reproduce them to the last decimal. Only the wall-clock `overhead.ms` column depends on the host.
 
 ```bash
-diff <(grep -v overhead results/EXP-A.log) <(grep -v overhead /path/to/your/EXP-A.log)
+python scripts/compare_logs.py results/EXP-A.log /path/to/your/EXP-A.log   # exit 0 = identical
 ```
+
+`compare_logs.py` drops the `overhead.ms` column (the last column of the blocks that have one)
+before comparing, so a plain `diff` of the two files is expected to differ only there.
+Each log also ends without any `[LOST]` line: every harness asserts that all submitted cloudlets
+finished (`Metrics.checked`), see the v1.1.0 entry of `CHANGELOG.md` for the defects this guards
+against.
 
 ## 5. Regenerate the figures
 

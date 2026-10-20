@@ -30,7 +30,7 @@ public final class Metrics {
         }
     }
 
-    /** mean and 95% confidence interval half-width (1.96*std/sqrt(n)) over a sample. */
+    /** mean and 95% confidence interval half-width (t_{n-1,0.975}*std/sqrt(n)) over a sample. */
     public static double[] meanCi95(final List<Double> v) {
         if (v.isEmpty()) return new double[]{0, 0};
         final double m = v.stream().mapToDouble(Double::doubleValue).average().orElse(0);
@@ -38,7 +38,7 @@ public final class Metrics {
         double s2 = 0;
         for (final double x : v) s2 += (x - m) * (x - m);
         final double std = Math.sqrt(s2 / (v.size() - 1));
-        return new double[]{m, 1.96 * std / Math.sqrt(v.size())};
+        return new double[]{m, tq(v.size()) * std / Math.sqrt(v.size())};
     }
 
     public static int weightOf(final int priority) {
@@ -179,5 +179,33 @@ public final class Metrics {
         final var v = new ArrayList<Double>();
         for (final var c : cs) v.add(waiting(c));
         return v;
+    }
+    /** Longest run of consecutive dispatches (ordered by start time) that belong to class c. */
+    public static int maxConsecutiveStarts(final List<Cloudlet> finished, final int c) {
+        final var s = new ArrayList<>(finished);
+        s.sort((a, b) -> Double.compare(a.getStartTime(), b.getStartTime()));
+        int run = 0, best = 0;
+        for (final var x : s) { run = x.getPriority() == c ? run + 1 : 0; best = Math.max(best, run); }
+        return best;
+    }
+
+    /** Mean response of the class-c cloudlets that arrived in [t0, t1). */
+    public static double meanResponseOfClassArrivingIn(final List<Cloudlet> finished, final int c, final double t0, final double t1) {
+        final var v = new ArrayList<Double>();
+        for (final var x : finished)
+            if (x.getPriority() == c && x.getDcArrivalTime() >= t0 && x.getDcArrivalTime() < t1) v.add(response(x));
+        return mean(v);
+    }
+
+    /** Returns the finished list after checking that no cloudlet was lost (audit finding C-01/M-09). */
+    public static List<Cloudlet> checked(final List<Cloudlet> finished, final int submitted) {
+        if (finished.size() != submitted)
+            System.out.printf("[LOST] finished=%d submitted=%d%n", finished.size(), submitted);
+        return finished;
+    }
+
+    /** two-sided 97.5% Student t quantile with n-1 degrees of freedom (n = 10/20/30 -> 2.26/2.09/2.05). */
+    private static double tq(final int n) {
+        return new org.apache.commons.math3.distribution.TDistribution(n - 1).inverseCumulativeProbability(0.975);
     }
 }

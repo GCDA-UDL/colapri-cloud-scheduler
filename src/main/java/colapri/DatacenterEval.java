@@ -125,7 +125,7 @@ public class DatacenterEval {
 
         final var vms = new ArrayList<Vm>(VMS);
         for (int i = 0; i < VMS; i++) {
-            final var vm = new VmSimple(MIPS, VM_PES);
+            final var vm = new VmPatched(MIPS, VM_PES);
             vm.setRam(2048).setBw(1000).setSize(10_000).setCloudletScheduler(schedFactory.get());
             vms.add(vm);
         }
@@ -133,7 +133,7 @@ public class DatacenterEval {
 
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final var s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             // EXP-B is a batch scenario (all at t0) so Min-Min/Max-Min completion-time model applies
@@ -147,7 +147,7 @@ public class DatacenterEval {
         final long t0 = System.nanoTime();
         sim.start();
         final double wallMs = (System.nanoTime() - t0) / 1e6;
-        final var finished = broker.getCloudletFinishedList();
+        final var finished = Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size());
         if (!diagShown) {
             diagShown = true;
             final Map<Long, Integer> perVm = new TreeMap<>();

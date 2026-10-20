@@ -34,12 +34,14 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
 
     private final Map<Integer, Integer> weights = new HashMap<>();   // class -> weight (override)
     private int adaptiveThreshold = 0;
+    private boolean resync = true;                // resynchronise an idle class's counter to the frontier (ablation: false)
     private ActivationPolicy activation = null;   // EXP-F: auto-tuned activation (fuzzy/analytic/learned)
     private int prevBacklog = 0;                  // for growth-aware activation policies
 
     // persistent ColaPri state (survives across scheduling events)
     private final Map<Long, Double> tag = new HashMap<>();           // cloudlet id -> virtual tag
     private final Map<Integer, Integer> seen = new HashMap<>();      // per-class arrival counter
+    private double virtualTime = 0.0;                                // frontier: largest tag already dispatched
 
     public CloudletSchedulerColaPri setPriorityWeight(final int priority, final int weight) {
         weights.put(clamp(priority), weight);
@@ -48,6 +50,12 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
 
     public CloudletSchedulerColaPri setAdaptiveThreshold(final int threshold) {
         this.adaptiveThreshold = Math.max(0, threshold);
+        return this;
+    }
+
+    /** Ablation switch: false restores the original rule without counter resynchronisation. */
+    public CloudletSchedulerColaPri setResync(final boolean resync) {
+        this.resync = resync;
         return this;
     }
 
@@ -72,7 +80,13 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
     @Override
     protected double moveNextCloudletsFromWaitingToExecList(final double currentTime) {
         orderWaitingByColaPri();
-        return super.moveNextCloudletsFromWaitingToExecList(currentTime);
+        final double next = super.moveNextCloudletsFromWaitingToExecList(currentTime);
+        // advance the frontier to the largest tag now in service (SFQ-style virtual time)
+        for (final CloudletExecution cle : getCloudletExecList()) {
+            final Double t = tag.get(cle.getId());
+            if (t != null && t > virtualTime) virtualTime = t;
+        }
+        return next;
     }
 
     private void orderWaitingByColaPri() {
@@ -94,12 +108,16 @@ public class CloudletSchedulerColaPri extends CloudletSchedulerSpaceShared {
         final double alpha = a;
 
         // assign a persistent weighted-round-robin tag to any cloudlet not seen yet;
-        // effective weight blends toward neutral (1) as alpha shrinks
+        // effective weight blends toward neutral (1) as alpha shrinks.
+        // Resynchronisation: a class returning from idleness may not mint tags below the frontier
+        // (the largest tag already dispatched), so its counter jumps to ceil(frontier * w) first.
         for (final CloudletExecution cle : waiting) {
             tag.computeIfAbsent(cle.getId(), id -> {
                 final int c = clamp(cle.getCloudlet().getPriority());
-                final int k = seen.merge(c, 1, Integer::sum) - 1;    // 0-based index within class
                 final double wEff = 1.0 + alpha * (weight(c) - 1.0); // alpha=1 -> w, alpha=0 -> 1
+                final int kMin = resync ? (int) Math.ceil(virtualTime * wEff - 1e-9) : 0;
+                final int k = Math.max(seen.getOrDefault(c, 0), kMin); // 0-based index within class
+                seen.put(c, k + 1);
                 return k / wEff;                                     // ColaPri weighted-RR virtual tag
             });
         }

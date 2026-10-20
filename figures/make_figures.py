@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Generate ColaPri paper figures (PDF, vector) from the final Fase A measurements.
-Numbers are the mean +/- CI95 reported in RESULTADOS_faseA.md. Run: python make_figures.py"""
+"""Generate ColaPri paper figures (PDF, vector) from the final measurements.
+Numbers are the means (+/- CI95) of the EXP-A..EXP-F logs in results/ (corrected harness, 2026-10-20:
+CPU-bound cloudlets, VmPatched, counter resynchronisation). Run: python make_figures.py"""
 import os
 import matplotlib
 matplotlib.use("Agg")
@@ -8,7 +9,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.patches import FancyBboxPatch, Rectangle, FancyArrowPatch
 
-OUT = os.path.join(os.path.dirname(__file__), "figures")
+_HERE = os.path.dirname(os.path.abspath(__file__))
+# paper/: write to paper/figures ; package figures/: write next to the script
+OUT = _HERE if os.path.basename(_HERE) == "figures" else os.path.join(_HERE, "figures")
 os.makedirs(OUT, exist_ok=True)
 plt.rcParams.update({"font.size": 11, "figure.autolayout": True})
 GREEN, AMBER, GREY, BLUE = "#2e8b57", "#e0a106", "#888888", "#3b6ea5"
@@ -115,25 +118,28 @@ def fig_architecture():
 
 
 def fig_starvation():
-    sched = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "DFPO", "SFQ", "ColaPri"]
-    wait = [465.2, 680.4, 721.0, 519.6, 8.2, 50.8, 260.8, 239.5]
-    err = [10.9, 22.5, 10.0, 4.3, 1.3, 18.1, 43.1, 46.9]
-    colors = [GREY, GREY, AMBER, AMBER, BLUE, BLUE, BLUE, GREEN]
-    fig, ax = plt.subplots(figsize=(6.8, 3.4))
-    ax.bar(sched, wait, yerr=err, capsize=4, color=colors)
+    # EXP-A STARV (30 seeds): waitMAX.p9 mean +/- CI95
+    sched = ["FCFS", "SJF", "Strict", "Aging", "EqualShare", "PS", "DFPO", "SFQ 6:1", "ColaPri 6:1",
+             "ColaPri 20:1", "ColaPri 60:1", "SFQ 60:1"]
+    wait = [79.3, 293.4, 344.1, 120.8, 3.9, 0.0, 4.3, 49.8, 56.9, 223.8, 311.5, 301.2]
+    err = [2.1, 23.3, 8.5, 2.1, 0.4, 0.0, 0.7, 9.8, 10.7, 13.7, 9.2, 10.1]
+    colors = [GREY, GREY, AMBER, AMBER, BLUE, BLUE, BLUE, BLUE, GREEN, GREEN, GREEN, BLUE]
+    fig, ax = plt.subplots(figsize=(7.4, 3.6))
+    ax.bar(sched, wait, yerr=err, capsize=3, color=colors)
     ax.set_ylabel("max waiting, low class p9 (s)")
     ax.set_title("Starvation under sustained load (lower is better)")
-    ax.annotate("-67% vs Strict", xy=(7, 239.5), xytext=(4.9, 430),
+    ax.set_xticks(range(len(sched))); ax.set_xticklabels(sched, rotation=35, ha="right", fontsize=8.5)
+    ax.annotate("-83% vs Strict", xy=(8, 56.9), xytext=(5.4, 250),
                 arrowprops=dict(arrowstyle="->", color=GREEN), color=GREEN, fontweight="bold")
     fig.savefig(os.path.join(OUT, "fig_starvation.pdf"))
     plt.close(fig)
 
 
 def fig_weights():
-    w = [1, 2, 4, 6, 10, 20]
-    p0 = [114.8, 90.2, 76.4, 71.8, 68.2, 65.5]
-    p9 = [116.7, 141.4, 155.5, 160.3, 164.2, 166.8]
-    ratio = [1.0, 1.6, 2.1, 2.3, 2.4, 2.6]
+    w = [1, 2, 4, 6, 10, 20]   # EXP-D D1 (30 seeds)
+    p0 = [57.8, 46.2, 39.7, 37.5, 35.8, 34.5]
+    p9 = [58.2, 69.7, 76.5, 78.7, 80.4, 81.7]
+    ratio = [1.0, 1.5, 2.0, 2.1, 2.3, 2.4]
     fig, ax1 = plt.subplots(figsize=(6, 3.4))
     ax1.plot(w, p0, "o-", color=GREEN, label="resp p0 (high)")
     ax1.plot(w, p9, "s-", color=AMBER, label="resp p9 (low)")
@@ -152,12 +158,13 @@ def fig_weights():
 
 
 def fig_perclass():
-    sched = ["FCFS", "SJF", "Strict", "WFQ", "DFPO", "SFQ", "ColaPri"]
-    p0 = [114.4, 106.7, 63.4, 141.4, 122.0, 105.3, 106.3]
-    p5 = [118.3, 105.9, 155.7, 101.4, 108.7, 117.4, 117.0]
-    p9 = [124.5, 108.9, 210.6, 61.9, 104.4, 141.3, 139.5]
+    # EXP-A MAIN (30 seeds): mean response per class
+    sched = ["FCFS", "SJF", "Strict", "PS", "EqualShare", "DFPO", "SFQ", "ColaPri"]
+    p0 = [57.6, 53.5, 33.2, 107.0, 70.2, 61.0, 53.2, 53.6]
+    p5 = [58.5, 53.6, 76.7, 107.3, 51.1, 54.6, 58.6, 58.4]
+    p9 = [62.0, 55.2, 103.0, 107.9, 32.4, 52.4, 69.8, 69.1]
     x = np.arange(len(sched)); ww = 0.27
-    fig, ax = plt.subplots(figsize=(7.0, 3.4))
+    fig, ax = plt.subplots(figsize=(7.4, 3.4))
     ax.bar(x - ww, p0, ww, label="p0 (high)", color=GREEN)
     ax.bar(x, p5, ww, label="p5 (mid)", color=AMBER)
     ax.bar(x + ww, p9, ww, label="p9 (low)", color=GREY)
@@ -171,10 +178,10 @@ def fig_perclass():
 
 def fig_traces():
     ds = ["PlanetLab", "Alibaba", "Bitbrains", "Materna", "Azure"]
-    fcfs = [40.7, 232.0, 185.5, 35.5, 40.9]
-    sfq = [23.9, 124.7, 117.3, 17.2, 26.4]
-    cola = [21.0, 127.7, 108.6, 16.6, 21.8]
-    strict = [10.0, 71.4, 64.7, 6.2, 10.4]
+    fcfs = [11.4, 112.7, 84.6, 8.5, 11.5]     # EXP-E (20 seeds): resp.p0
+    sfq = [4.9, 59.8, 51.2, 3.2, 6.1]
+    cola = [4.3, 61.4, 48.9, 2.9, 4.3]
+    strict = [2.7, 32.8, 27.4, 2.1, 2.8]
     x = np.arange(len(ds)); ww = 0.2
     fig, ax = plt.subplots(figsize=(6.6, 3.4))
     ax.bar(x - 1.5 * ww, fcfs, ww, label="FCFS", color=GREY)
@@ -191,17 +198,20 @@ def fig_traces():
 
 def fig_activation():
     # EXP-F: trade-off resp.p0 (x, lower=faster high class) vs starv.p9 (y, lower=less starvation)
-    name = ["always-on", "fixed(15)", "best-fixed(40)", "analytic(20,50)", "fuzzy(20,50)", "learned"]
-    p0 = [257.1, 289.2, 295.1, 294.2, 256.9, 294.5]
-    st = [55.4, 49.0, 47.5, 46.8, 54.8, 47.8]
-    col = [GREY, AMBER, AMBER, GREEN, GREY, BLUE]
-    mk = ["o", "s", "s", "*", "o", "^"]
+    # EXP-F TEST seeds (20): resp.p0 vs starv.p9
+    name = ["always-on", "FCFS", "fixed(15)", "best-fixed(40)", "analytic(40,80)", "fuzzy(30,60)", "learned"]
+    p0 = [107.3, 113.6, 108.2, 109.8, 119.0, 109.7, 118.6]
+    st = [37.3, 36.1, 37.0, 35.8, 25.9, 33.8, 28.9]
+    col = [GREY, GREY, AMBER, AMBER, GREEN, GREY, BLUE]
+    mk = ["o", "D", "s", "s", "*", "o", "^"]
+    off = {"always-on": (6, 5), "FCFS": (6, -10), "fixed(15)": (6, -10), "best-fixed(40)": (6, 5),
+           "analytic(40,80)": (-72, 8), "fuzzy(30,60)": (6, 5), "learned": (6, 5)}
     fig, ax = plt.subplots(figsize=(6.2, 3.6))
     for i in range(len(name)):
         ax.scatter(p0[i], st[i], s=160 if mk[i] == "*" else 90, c=col[i], marker=mk[i],
                    edgecolors="black", linewidths=0.5, zorder=3)
         ax.annotate(name[i], (p0[i], st[i]), textcoords="offset points",
-                    xytext=(6, 5), fontsize=8)
+                    xytext=off[name[i]], fontsize=8)
     ax.set_xlabel("high-class response p0 (s)  —  lower is better")
     ax.set_ylabel("low-class starvation p9  —  lower is better")
     ax.set_title("EXP-F: activation policies (bottom-left = better on both)")
@@ -309,17 +319,22 @@ def fig_vtime_timeline():
 
 def fig_pareto_starv():
     """Starvation experiment as a trade-off: resp.p0 (x) vs waitMAX.p9 (y); bottom-left is better."""
-    name = ["FCFS", "SJF", "Strict", "Aging", "WFQ", "DFPO", "SFQ", "ColaPri"]
-    p0 = [248.3, 215.9, 212.0, 238.5, 275.7, 273.2, 260.5, 262.1]
-    wm = [465.2, 680.4, 721.0, 519.6, 8.2, 50.8, 260.8, 239.5]
-    col = [GREY, GREY, RED, AMBER, BLUE, BLUE, BLUE, GREEN]
-    mk = ["o", "o", "s", "s", "^", "^", "D", "*"]
+    # EXP-A STARV (30 seeds): resp.p0 vs waitMAX.p9; ColaPri weight sweep traces the frontier
+    name = ["FCFS", "SJF", "Strict", "Aging", "EqualShare", "PS", "DFPO", "SFQ 6:1", "ColaPri 6:1",
+            "ColaPri 20:1", "ColaPri 60:1", "SFQ 60:1"]
+    p0 = [45.2, 37.1, 28.2, 40.6, 49.7, 86.5, 49.6, 47.4, 46.5, 35.3, 30.1, 31.1]
+    wm = [79.3, 293.4, 344.1, 120.8, 3.9, 0.0, 4.3, 49.8, 56.9, 223.8, 311.5, 301.2]
+    col = [GREY, GREY, RED, AMBER, BLUE, BLUE, BLUE, BLUE, GREEN, GREEN, GREEN, BLUE]
+    mk = ["o", "o", "s", "s", "^", "^", "^", "D", "*", "*", "*", "D"]
+    offs = {"SFQ 6:1": (-44, -14), "DFPO": (7, -12), "EqualShare": (7, 4), "PS": (-20, 8),
+            "SFQ 60:1": (7, -12), "Strict": (7, -4), "ColaPri 60:1": (-70, 8), "ColaPri 20:1": (7, 5),
+            "ColaPri 6:1": (7, 5), "SJF": (7, 5), "FCFS": (7, 5), "Aging": (7, 5)}
     fig, ax = plt.subplots(figsize=(6.2, 3.8))
+    ax.plot([46.5, 35.3, 30.1], [56.9, 223.8, 311.5], "--", color=GREEN, lw=1.0, zorder=2)
     for i in range(len(name)):
         ax.scatter(p0[i], wm[i], s=190 if mk[i] == "*" else 95, c=col[i], marker=mk[i],
                    edgecolors="black", linewidths=0.5, zorder=3)
-        off = (-30, -14) if name[i] == "SFQ" else ((7, -12) if name[i] == "DFPO" else (7, 5))
-        ax.annotate(name[i], (p0[i], wm[i]), textcoords="offset points", xytext=off, fontsize=8.5)
+        ax.annotate(name[i], (p0[i], wm[i]), textcoords="offset points", xytext=offs[name[i]], fontsize=8.5)
     ax.set_xlabel("high-class response p0 (s)  —  lower is better")
     ax.set_ylabel("worst-case low-class wait p9 (s)  —  lower is better")
     ax.set_title("Starvation trade-off (sustained load)")
@@ -330,8 +345,8 @@ def fig_pareto_starv():
 def fig_adaptive():
     """ColaPri == FCFS under light load; differentiates under heavy load."""
     fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.2), sharey=False)
-    for ax, title, f, c in [(axes[0], "light load (no backlog)", [12.6, 12.3], [12.6, 12.3]),
-                            (axes[1], "heavy load (burst)", [153.3, 150.2], [93.3, 207.7])]:
+    for ax, title, f, c in [(axes[0], "light load (no backlog)", [4.1, 4.1], [4.1, 4.1]),       # EXP-A ADAPTIVE
+                            (axes[1], "heavy load (burst)", [72.9, 71.9], [44.9, 98.5])]:
         x = np.arange(2); w = 0.36
         ax.bar(x - w / 2, f, w, label="FCFS", color=GREY)
         ax.bar(x + w / 2, c, w, label="ColaPri", color=GREEN)
@@ -345,13 +360,13 @@ def fig_adaptive():
 def fig_datacenter():
     """Per mapping, ColaPri lowers high-class response vs the default scheduler."""
     mp = ["RoundRobin", "MinMin", "MaxMin", "DemandAware"]
-    d0 = [41.2, 41.4, 41.4, 41.2]; c0 = [38.4, 38.6, 38.6, 38.4]   # EXP-B.log resp.p0 default / ColaPri
+    d0 = [22.7, 22.7, 22.7, 22.7]; c0 = [21.3, 21.3, 21.4, 21.3]   # EXP-B.log resp.p0 default / ColaPri
     x = np.arange(len(mp)); w = 0.38
     fig, ax = plt.subplots(figsize=(6.6, 3.3))
     ax.bar(x - w / 2, d0, w, label="default  (resp p0)", color=GREY)
     ax.bar(x + w / 2, c0, w, label="ColaPri  (resp p0)", color=GREEN)
     ax.set_xticks(x); ax.set_xticklabels(mp); ax.set_ylabel("high-class response p0 (s)")
-    ax.set_ylim(36, 43); ax.set_title("Datacenter: ColaPri speeds p0 under every mapping", fontsize=10)
+    ax.set_ylim(20, 24); ax.set_title("Datacenter: ColaPri speeds p0 under every mapping (axis truncated)", fontsize=10)
     ax.legend(fontsize=8)
     fig.savefig(os.path.join(OUT, "fig_datacenter.pdf")); plt.close(fig)
 
@@ -359,7 +374,7 @@ def fig_datacenter():
 def fig_scalability():
     """Differentiation grows with scale; makespan unchanged; overhead small."""
     n = [200, 500, 1000]
-    d0 = [25.3, 64.9, 129.9]; c0 = [24.2, 58.3, 113.3]; c9 = [27.2, 78.0, 165.6]; ov = [14.4, 15.0, 47.8]  # EXP-C.log
+    d0 = [14.7, 34.5, 67.2]; c0 = [14.2, 31.3, 58.9]; c9 = [16.0, 41.2, 85.2]; ov = [14.2, 13.6, 36.2]  # EXP-C.log
     fig, ax1 = plt.subplots(figsize=(6.4, 3.4))
     ax1.plot(n, c0, "o-", color=GREEN, label="ColaPri p0")
     ax1.plot(n, c9, "s-", color=AMBER, label="ColaPri p9")
@@ -377,11 +392,12 @@ def fig_scalability():
 def fig_sensitivity():
     """Three sensitivity panels: differentiation (p9-p0) vs load, vs PEs, vs threshold."""
     fig, ax = plt.subplots(1, 3, figsize=(9.4, 3.0))
-    ax[0].plot([0.5, 1, 2, 3, 5], [116.8, 117.0, 120.1, 115.2, 119.4], "o-", color=GREEN)
+    # EXP-D D3 / D4 / D2 (30 seeds): p9-p0 differentiation
+    ax[0].plot([0.5, 1, 2, 3, 5], [5.1, 56.0, 57.5, 56.1, 56.9], "o-", color=GREEN)
     ax[0].set_title("vs offered load"); ax[0].set_xlabel("arrival rate (1/s)")
-    ax[1].plot([1, 2, 4, 8], [119.9, 115.2, 109.2, 105.9], "s-", color=AMBER)
+    ax[1].plot([1, 2, 4, 8], [119.9, 56.1, 24.5, 9.1], "s-", color=AMBER)
     ax[1].set_title("vs VM PEs"); ax[1].set_xlabel("PEs per VM")
-    ax[2].plot([0, 5, 15, 30, 60], [115.2, 115.2, 114.4, 112.4, 105.2], "^-", color=BLUE)
+    ax[2].plot([0, 5, 15, 30, 60], [56.1, 56.1, 53.6, 50.3, 46.0], "^-", color=BLUE)
     ax[2].set_title("vs adaptive threshold"); ax[2].set_xlabel(r"threshold $\theta$")
     ax[0].set_ylabel("differentiation  p9$-$p0  (s)")
     for a in ax:
@@ -390,22 +406,10 @@ def fig_sensitivity():
     fig.savefig(os.path.join(OUT, "fig_sensitivity.pdf")); plt.close(fig)
 
 
-def fig_jain():
-    """Weighted Jain fairness per scheduler (main scenario)."""
-    name = ["WFQ", "FCFS", "SJF", "DFPO", "SFQ", "ColaPri", "Aging", "Strict"]
-    jain = [0.6, 0.7, 0.7, 0.7, 0.8, 0.8, 0.9, 0.9]
-    col = [BLUE, GREY, GREY, BLUE, BLUE, GREEN, RED, RED]
-    fig, ax = plt.subplots(figsize=(6.2, 3.0))
-    ax.bar(name, jain, color=col)
-    ax.set_ylabel("weighted Jain index"); ax.set_ylim(0, 1.0)
-    ax.set_title("Weighted fairness (higher is better)", fontsize=10)
-    fig.savefig(os.path.join(OUT, "fig_jain.pdf")); plt.close(fig)
-
-
 def fig_traces_speedup():
-    """Interactive-class speedup of ColaPri over FCFS per trace."""
+    """Interactive-class speedup of ColaPri over FCFS per trace (retired from the paper)."""
     ds = ["PlanetLab", "Alibaba", "Bitbrains", "Materna", "Azure"]
-    fcfs = [40.7, 232.0, 185.5, 35.5, 40.9]; cola = [21.0, 127.7, 108.6, 16.6, 21.8]
+    fcfs = [11.4, 112.7, 84.6, 8.5, 11.5]; cola = [4.3, 61.4, 48.9, 2.9, 4.3]
     sp = [round((1 - c / f) * 100) for c, f in zip(cola, fcfs)]
     fig, ax = plt.subplots(figsize=(6.2, 3.2))
     bars = ax.bar(ds, sp, color=GREEN)
@@ -441,6 +445,6 @@ def fig_algo_flow():
 if __name__ == "__main__":
     fig_operation(); fig_architecture(); fig_problem(); fig_vtime_timeline(); fig_algo_flow()
     fig_starvation(); fig_pareto_starv(); fig_weights(); fig_perclass(); fig_adaptive()
-    fig_datacenter(); fig_scalability(); fig_sensitivity(); fig_jain()
-    fig_traces(); fig_activation()  # fig_traces_speedup retired -> figures/not_used_anymore/ (kept for future)
+    fig_datacenter(); fig_scalability(); fig_sensitivity()
+    fig_traces(); fig_activation()  # fig_traces_speedup and fig_jain retired (Jain index dropped from the paper)
     print("figures written to", OUT)

@@ -22,12 +22,13 @@ import java.util.Map;
  * the SAME ColaPri mechanism on a NON-STATIONARY workload (calm -> storm -> calm), where no single
  * fixed threshold is best across phases:
  *
- *   always-on, fixed-theta, analytic(ramp), fuzzy(Mamdani), learned(offline lookup).
+ *   always-on, FCFS (theta = infinity), fixed-theta, analytic(ramp), fuzzy (zero-order Sugeno:
+ *   singleton outputs, weighted average), learned(offline lookup).
  *
- * The learned table is fitted by coordinate descent on TRAIN seeds and evaluated on disjoint TEST
- * seeds. Objective: low high-class response without starving the low class
- * (cost = resp.p0 + 10 * starv.p9). Shows the cheap analytic/fuzzy controllers match the learned
- * policy and beat the best single fixed threshold, at zero training cost.
+ * Every hyper-parameter (the lookup table, the best fixed theta, the ramp placement of the analytic
+ * and fuzzy controllers) is selected on TRAIN seeds; all policies are then evaluated on disjoint
+ * TEST seeds. Objective: low high-class response without starving the low class
+ * (cost = resp.p0 + 10 * starv.p9).
  */
 public class ActivationEval {
     private static final int MIPS = 1000, VM_PES = 2;
@@ -53,25 +54,43 @@ public class ActivationEval {
         System.out.print("\nLearned alpha by backlog bucket [each " + BUCKET_W + " tasks]: ");
         System.out.println(Arrays.toString(round(table)));
 
-        // ---- best single fixed-theta: full sweep over TEST (oracle reference) ----
+        // ---- best single fixed-theta: SELECTED on TRAIN seeds (grid incl. FCFS = theta infinity);
+        //      the TEST cost is printed alongside for reporting only ----
+        final int INF = Integer.MAX_VALUE;
         int bestTheta = 0; double bestThetaCost = Double.MAX_VALUE;
-        System.out.println("\n[fixed-theta sweep over TEST seeds] theta -> cost");
-        for (final int th : new int[]{0, 5, 10, 20, 40}) {
-            final double c = avgCostTest(() -> ActivationPolicy.fixed(th));
-            System.out.printf("  theta=%-3d -> cost %.1f%n", th, c);
-            if (c < bestThetaCost) { bestThetaCost = c; bestTheta = th; }
+        System.out.println("\n[fixed-theta sweep] theta -> cost on TRAIN seeds (selection) | cost on TEST seeds (report)");
+        for (final int th : new int[]{0, 5, 10, 20, 40, 60, 80, 160, INF}) {
+            final double cTr = avgCostTrain(() -> ActivationPolicy.fixed(th));
+            final double cTe = avgCostTest(() -> ActivationPolicy.fixed(th));
+            System.out.printf("  theta=%-10s -> train %.1f | test %.1f%n", thetaName(th), cTr, cTe);
+            if (cTr < bestThetaCost) { bestThetaCost = cTr; bestTheta = th; }
         }
         final int bt = bestTheta;
-        System.out.printf("  best fixed theta = %d (cost %.1f)%n", bt, bestThetaCost);
+        System.out.printf("  best fixed theta on TRAIN = %s (train cost %.1f)%n", thetaName(bt), bestThetaCost);
+
+        // ---- ramp placement (lo,hi) for the analytic and fuzzy controllers: SELECTED on TRAIN seeds ----
+        final int[][] ramps = {{5, 40}, {10, 40}, {20, 50}, {30, 60}, {40, 80}};
+        int[] bestA = ramps[0], bestF = ramps[0]; double bestACost = Double.MAX_VALUE, bestFCost = Double.MAX_VALUE;
+        System.out.println("\n[ramp placement sweep on TRAIN seeds] (lo,hi) -> analytic cost | fuzzy cost");
+        for (final int[] r : ramps) {
+            final double ca = avgCostTrain(() -> ActivationPolicy.analytic(r[0], r[1]));
+            final double cf = avgCostTrain(() -> ActivationPolicy.fuzzy(r[0], r[1]));
+            System.out.printf("  (%d,%d) -> analytic %.1f | fuzzy %.1f%n", r[0], r[1], ca, cf);
+            if (ca < bestACost) { bestACost = ca; bestA = r; }
+            if (cf < bestFCost) { bestFCost = cf; bestF = r; }
+        }
+        final int[] ra = bestA, rf = bestF;
+        System.out.printf("  selected on TRAIN: analytic(%d,%d), fuzzy(%d,%d)%n", ra[0], ra[1], rf[0], rf[1]);
 
         // ---- evaluate all policies on TEST seeds ----
         record Pol(String name, java.util.function.Supplier<ActivationPolicy> p) {}
         final List<Pol> policies = List.of(
             new Pol("always-on", ActivationPolicy::alwaysOn),
+            new Pol("FCFS(theta=inf)", () -> ActivationPolicy.fixed(INF)),
             new Pol("fixed(theta=15)", () -> ActivationPolicy.fixed(15)),
-            new Pol("best-fixed(theta=" + bt + ")", () -> ActivationPolicy.fixed(bt)),
-            new Pol("analytic(20,50)", () -> ActivationPolicy.analytic(20, 50)),
-            new Pol("fuzzy(20,50)", () -> ActivationPolicy.fuzzy(20, 50)),
+            new Pol("best-fixed(theta=" + thetaName(bt) + ")", () -> ActivationPolicy.fixed(bt)),
+            new Pol("analytic(" + ra[0] + "," + ra[1] + ")", () -> ActivationPolicy.analytic(ra[0], ra[1])),
+            new Pol("fuzzy(" + rf[0] + "," + rf[1] + ")", () -> ActivationPolicy.fuzzy(rf[0], rf[1])),
             new Pol("learned(lookup)", () -> ActivationPolicy.learned(table, BUCKET_W))
         );
 
@@ -131,6 +150,17 @@ public class ActivationEval {
         return c / TEST;
     }
 
+    private static double avgCostTrain(final java.util.function.Supplier<ActivationPolicy> p) {
+        double c = 0;
+        for (long seed = 0; seed < TRAIN; seed++)
+            c += cost(run(p.get(), phased(seed)).finished());
+        return c / TRAIN;
+    }
+
+    private static String thetaName(final int th) {
+        return th == Integer.MAX_VALUE ? "inf(FCFS)" : String.valueOf(th);
+    }
+
     private static double cost(final List<Cloudlet> f) {
         return Metrics.meanResponseOfClass(f, 0) + 10.0 * Metrics.starvationCount(f, 9, STARV_THRESHOLD);
     }
@@ -174,14 +204,14 @@ public class ActivationEval {
         new DatacenterSimple(sim, List.of(host));
         final var broker = new DatacenterBrokerSimple(sim);
         broker.setVmDestructionDelay(1_000_000.0);
-        final var vm = new VmSimple(MIPS, VM_PES);
+        final var vm = new VmPatched(MIPS, VM_PES);
         vm.setRam(4096).setBw(10_000).setSize(10_000).setCloudletScheduler(
             new CloudletSchedulerColaPri().setPriorityWeight(0, W_HIGH).setPriorityWeight(9, W_LOW)
                 .setActivationPolicy(policy));
         broker.submitVmList(List.of(vm));
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final var s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             c.setSubmissionDelay(s.arrival());
@@ -190,6 +220,6 @@ public class ActivationEval {
         broker.submitCloudletList(cloudlets);
         final long t0 = System.nanoTime();
         sim.start();
-        return new Result(broker.getCloudletFinishedList(), (System.nanoTime() - t0) / 1e6);
+        return new Result(Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size()), (System.nanoTime() - t0) / 1e6);
     }
 }

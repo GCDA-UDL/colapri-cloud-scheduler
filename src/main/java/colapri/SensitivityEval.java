@@ -136,12 +136,12 @@ public class SensitivityEval {
         new DatacenterSimple(sim, List.of(host));
         final var broker = new DatacenterBrokerSimple(sim);
         broker.setVmDestructionDelay(100_000.0);
-        final var vm = new VmSimple(MIPS, vmPes);
+        final var vm = new VmPatched(MIPS, vmPes);
         vm.setRam(4096).setBw(10_000).setSize(10_000).setCloudletScheduler(factory.get());
         broker.submitVmList(List.of(vm));
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());
         for (final var s : specs) {
-            final var c = new CloudletSimple(s.length(), 1, new UtilizationModelFull());
+            final var c = Workload.cloudlet(s.length());
             c.setSizes(1024);
             c.setPriority(s.priority());
             c.setSubmissionDelay(s.arrival());
@@ -149,6 +149,6 @@ public class SensitivityEval {
         }
         broker.submitCloudletList(cloudlets);
         sim.start();
-        return broker.getCloudletFinishedList();
+        return Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size());
     }
 }

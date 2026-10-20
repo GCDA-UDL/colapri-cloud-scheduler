@@ -5,47 +5,52 @@
 
 ========== PlanetLab (200 VMs disponibles, subsample 80) ==========
 scheduler               resp.p0        resp.p9     waitMAX.p9   starv.p9     Jain
-FCFS                   40.7±2.2       41.6±2.6       76.9±2.8   10.9±1.4  0.7±0.0
-StrictPriority         10.0±1.3       76.4±3.3       86.8±2.6   25.3±0.6  0.9±0.0
-WFQ-fair               40.2±2.4       42.2±3.1       78.6±2.9   11.3±1.2  0.7±0.0
-SFQ-weighted           23.9±2.5       64.1±2.7       84.3±2.6   20.9±0.8  0.9±0.0
-ColaPri                21.0±2.1       67.7±2.8       84.8±2.6   22.3±0.7  0.9±0.0
+FCFS                   11.4±1.0       11.8±1.1       19.6±1.3    0.0±0.0  0.7±0.0
+StrictPriority          2.7±0.2       26.6±1.7       41.2±1.8    0.0±0.0  0.9±0.0
+EqualShare             11.7±1.3       11.4±1.3       20.6±1.7    0.0±0.0  0.7±0.0
+PS-timeshared          16.6±1.4       12.4±1.0        0.0±0.0    0.0±0.0  0.7±0.0
+SFQ-weighted            4.9±1.0       21.8±1.2       34.3±1.6    0.0±0.0  0.9±0.0
+ColaPri                 4.3±0.7       23.0±1.3       35.4±1.4    0.0±0.0  1.0±0.0
   (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)
 
 ========== Alibaba (100 VMs disponibles, subsample 80) ==========
 scheduler               resp.p0        resp.p9     waitMAX.p9   starv.p9     Jain
-FCFS                 232.0±11.5      239.0±7.4      451.5±4.5   24.4±0.7  0.7±0.0
-StrictPriority         71.4±2.4      384.2±5.1      462.0±1.4   26.8±0.4  0.9±0.0
-WFQ-fair              229.6±6.5      247.2±5.4      460.6±1.9   24.6±0.5  0.7±0.0
-SFQ-weighted          124.7±3.4      353.0±4.2      461.7±1.5   26.0±0.4  0.9±0.0
-ColaPri               127.7±3.7      347.9±4.1      461.9±1.5   26.0±0.4  0.9±0.0
+FCFS                  112.7±5.6      114.0±4.0      209.7±2.2   21.4±0.8  0.7±0.0
+StrictPriority         32.8±2.1      185.5±3.0      214.7±0.7   26.6±0.6  0.9±0.0
+EqualShare            111.5±3.5      116.9±3.3      213.9±1.3   21.4±0.4  0.7±0.0
+PS-timeshared         215.5±1.5      226.6±1.2        0.0±0.0    0.0±0.0  0.7±0.0
+SFQ-weighted           59.8±2.3      168.8±3.1      214.7±0.8   24.9±0.5  0.9±0.0
+ColaPri                61.4±2.5      166.1±3.2      215.2±0.7   24.6±0.6  0.9±0.0
   (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)
 
 ========== Bitbrains (100 VMs disponibles, subsample 80) ==========
 scheduler               resp.p0        resp.p9     waitMAX.p9   starv.p9     Jain
-FCFS                 185.5±11.3     186.5±10.3      350.8±7.1   24.0±0.8  0.7±0.0
-StrictPriority         64.7±3.9      310.7±7.7      360.1±6.9   26.8±0.4  0.9±0.0
-WFQ-fair              178.9±8.2      190.2±6.8      358.9±7.0   23.7±0.6  0.7±0.0
-SFQ-weighted          117.3±6.2     260.9±12.4      360.6±6.8   24.1±0.7  0.9±0.0
-ColaPri               108.6±4.9      275.2±6.9      360.9±6.9   25.6±0.4  0.9±0.0
+FCFS                   84.6±5.8       84.0±6.1      157.5±3.8   18.8±1.3  0.7±0.0
+StrictPriority         27.4±2.1      145.3±3.6      162.9±3.6   26.4±0.5  0.9±0.0
+EqualShare             83.3±4.7       85.5±4.0      159.8±4.0   19.0±0.8  0.7±0.0
+PS-timeshared         108.3±3.7       78.0±5.0        0.0±0.0    0.0±0.0  0.7±0.0
+SFQ-weighted           51.2±3.3      120.6±7.3      163.4±3.6   22.3±1.4  0.9±0.0
+ColaPri                48.9±3.7      127.1±3.4      163.5±3.5   23.9±0.4  0.9±0.0
   (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)
 
 ========== Materna (100 VMs disponibles, subsample 80) ==========
 scheduler               resp.p0        resp.p9     waitMAX.p9   starv.p9     Jain
-FCFS                   35.5±1.5       34.9±1.8       66.6±1.1    7.7±1.1  0.7±0.0
-StrictPriority          6.2±0.8       66.0±1.9       75.0±1.3   25.2±0.5  0.9±0.0
-WFQ-fair               34.9±1.6       36.7±2.0       68.5±1.6    9.1±1.0  0.7±0.0
-SFQ-weighted           17.2±1.6       56.9±1.4       73.3±1.6   20.9±0.5  0.9±0.0
-ColaPri                16.6±1.4       56.6±1.6       73.6±1.8   20.7±0.6  0.9±0.0
+FCFS                    8.5±0.5        8.3±0.6       14.4±0.7    0.0±0.0  0.7±0.0
+StrictPriority          2.1±0.1       19.3±1.1       34.6±1.8    0.0±0.0  0.9±0.0
+EqualShare              8.0±1.2        8.9±1.2       16.6±1.4    0.0±0.0  0.7±0.0
+PS-timeshared          12.9±0.9       10.8±0.8        0.0±0.0    0.0±0.0  0.7±0.0
+SFQ-weighted            3.2±0.4       16.9±0.9       29.4±1.5    0.0±0.0  1.0±0.0
+ColaPri                 2.9±0.3       16.6±1.0       29.7±1.4    0.0±0.0  1.0±0.0
   (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)
 
 ========== Azure (100 VMs disponibles, subsample 80) ==========
 scheduler               resp.p0        resp.p9     waitMAX.p9   starv.p9     Jain
-FCFS                   40.9±1.6       40.8±2.8       77.4±1.7   10.9±1.4  0.7±0.0
-StrictPriority         10.4±1.2       78.1±2.0       85.4±1.6   26.0±0.5  0.9±0.0
-WFQ-fair               40.7±1.8       42.5±2.5       79.0±1.6   11.6±1.1  0.7±0.0
-SFQ-weighted           26.4±1.9       65.3±2.3       84.9±1.8   21.3±0.8  0.9±0.0
-ColaPri                21.8±1.3       66.9±2.3       84.6±1.8   22.2±0.7  0.9±0.0
+FCFS                   11.5±0.8       11.1±1.1       19.7±1.0    0.0±0.0  0.7±0.0
+StrictPriority          2.8±0.1       26.0±1.3       41.3±1.0    0.0±0.0  0.9±0.0
+EqualShare             11.1±0.6       12.0±1.4       22.3±1.9    0.0±0.0  0.7±0.0
+PS-timeshared          17.9±1.2       13.0±1.0        0.0±0.0    0.0±0.0  0.6±0.0
+SFQ-weighted            6.1±0.9       21.9±1.3       35.1±1.6    0.0±0.0  0.9±0.0
+ColaPri                 4.3±0.5       22.2±1.6       35.2±1.7    0.0±0.0  1.0±0.0
   (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)
 
 #  FIN EXP-E.

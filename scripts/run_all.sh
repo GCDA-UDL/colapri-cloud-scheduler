@@ -9,7 +9,7 @@
 # Approx. runtime: a few minutes total on a modern desktop (i7-14700KF reference host).
 set -euo pipefail
 REPO="$(cd "$(dirname "$0")/.." && pwd)"
-TRACES="${1:-}"
+TRACES="${1:-$REPO/data}"   # default: the bundled subsets (PlanetLab, Bitbrains, Materna)
 IMG=maven:3.9-eclipse-temurin-21   # pin by digest for strict reproduction if desired
 
 VOLS=(-v "$REPO:/workspace" -v colapri_m2:/root/.m2)
