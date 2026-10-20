@@ -345,7 +345,7 @@ def fig_adaptive():
 def fig_datacenter():
     """Per mapping, ColaPri lowers high-class response vs the default scheduler."""
     mp = ["RoundRobin", "MinMin", "MaxMin", "DemandAware"]
-    d0 = [41.2, 41.3, 41.4, 41.2]; c0 = [38.4, 38.4, 38.7, 38.4]
+    d0 = [41.2, 41.4, 41.4, 41.2]; c0 = [38.4, 38.6, 38.6, 38.4]   # EXP-B.log resp.p0 default / ColaPri
     x = np.arange(len(mp)); w = 0.38
     fig, ax = plt.subplots(figsize=(6.6, 3.3))
     ax.bar(x - w / 2, d0, w, label="default  (resp p0)", color=GREY)
@@ -359,7 +359,7 @@ def fig_datacenter():
 def fig_scalability():
     """Differentiation grows with scale; makespan unchanged; overhead small."""
     n = [200, 500, 1000]
-    d0 = [25.3, 64.9, 129.9]; c0 = [24.2, 58.3, 113.3]; c9 = [27.2, 78.0, 165.6]; ov = [14.0, 16.1, 49.3]
+    d0 = [25.3, 64.9, 129.9]; c0 = [24.2, 58.3, 113.3]; c9 = [27.2, 78.0, 165.6]; ov = [14.4, 15.0, 47.8]  # EXP-C.log
     fig, ax1 = plt.subplots(figsize=(6.4, 3.4))
     ax1.plot(n, c0, "o-", color=GREEN, label="ColaPri p0")
     ax1.plot(n, c9, "s-", color=AMBER, label="ColaPri p9")
