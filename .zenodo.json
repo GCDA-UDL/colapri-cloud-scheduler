@@ -7,22 +7,22 @@
     {
       "name": "da Silva, Vitor Luiz",
       "orcid": "0000-0002-3296-2752",
-      "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"
+      "affiliation": "SEMBAC, Universitat de Lleida"
     },
     {
       "name": "Tomás, Rosa Ana",
       "orcid": "0000-0002-1995-3974",
-      "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"
+      "affiliation": "SEMBAC, Universitat de Lleida"
     },
     {
       "name": "Oliva, Joaquim",
       "orcid": "0009-0006-2645-6008",
-      "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"
+      "affiliation": "SEMBAC, Universitat de Lleida"
     },
     {
       "name": "Guirado, Fernando",
       "orcid": "0000-0003-1352-9555",
-      "affiliation": "Department of Computer Engineering and Digital Design, University of Lleida"
+      "affiliation": "SEMBAC, Universitat de Lleida"
     }
   ],
   "keywords": [
@@ -43,5 +43,5 @@
     }
   ],
   "notes": "Funding: MICIU AEI/10.13039/501100011033, contract PID2023-146193OB-I00. Journal DOI to be added as related_identifier on acceptance.",
-  "version": "1.1.0"
+  "version": "1.1.1"
 }

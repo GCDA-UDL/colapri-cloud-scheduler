@@ -3,6 +3,15 @@
 All notable changes to the ColaPri reproduction package. Versions follow the GitHub releases;
 the Zenodo record (once created) archives each release.
 
+## v1.1.1 — 2026-10-21
+
+Metadata-only release, created so that the GitHub–Zenodo integration (enabled after v1.1.0) archives
+the package. No code, log or figure changes relative to v1.1.0.
+
+- Author affiliation updated to **SEMBAC, Universitat de Lleida** in `CITATION.cff`, `.zenodo.json` and
+  the README (the group joined SEMBAC in October 2026).
+- `ZENODO_CHECKLIST.md` rewritten for the GitHub-integration flow.
+
 ## v1.1.0 — 2026-10-20
 
 **Corrected harness: every number in `results/` and `figures/` changed.** An independent audit of

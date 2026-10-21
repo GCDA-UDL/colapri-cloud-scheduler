@@ -9,8 +9,8 @@ Reproducible code, experiment harnesses, captured results and trace provenance f
 > **ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task
 > Scheduling, Evaluated in CloudSim Plus** (submitted to *Simulation Modelling Practice and Theory*).
 
-**Authors:** Vitor L. da Silva, Rosa Ana Tomás, Joaquim Oliva, Fernando Guirado — Department of Computer
-Engineering and Digital Design, University of Lleida (UdL), Spain.
+**Authors:** Vitor L. da Silva, Rosa Ana Tomás, Joaquim Oliva, Fernando Guirado — SEMBAC, Universitat de
+Lleida, Spain.
 Canonical repository: [GCDA-UDL/colapri-cloud-scheduler](https://github.com/GCDA-UDL/colapri-cloud-scheduler)
 (mirror: `VitorDaSilvaUdL/colapri-cloud-scheduler`). Step-by-step instructions: [REPRODUCE.md](REPRODUCE.md).
 
