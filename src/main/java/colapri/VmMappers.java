@@ -53,29 +53,34 @@ public final class VmMappers {
     public static Map<Cloudlet, Vm> minMin(final List<Cloudlet> cloudlets, final List<Vm> vms) { return minMaxMin(cloudlets, vms, true); }
     public static Map<Cloudlet, Vm> maxMin(final List<Cloudlet> cloudlets, final List<Vm> vms) { return minMaxMin(cloudlets, vms, false); }
 
-    /** Shared Min-Min / Max-Min core. minFirst=true -> Min-Min, false -> Max-Min. */
+    /** Shared Min-Min / Max-Min core. minFirst=true -> Min-Min, false -> Max-Min.
+     *  Deterministic (v1.1.1): candidates are scanned in submission order and ties in the completion time
+     *  (frequent, because task lengths are integers) are broken by the lowest task index and the lowest VM
+     *  index. v1.1.0 iterated an identity-hash set, whose order changes between JVM runs, so the Min-Min and
+     *  Max-Min rows of EXP-B varied by up to 0.3 s between executions. */
     private static Map<Cloudlet, Vm> minMaxMin(final List<Cloudlet> cloudlets, final List<Vm> vms, final boolean minFirst) {
         final Map<Cloudlet, Vm> a = new IdentityHashMap<>();
         final double[] ready = new double[vms.size()];
-        final Set<Cloudlet> remaining = Collections.newSetFromMap(new IdentityHashMap<>());
-        remaining.addAll(cloudlets);
-        while (!remaining.isEmpty()) {
-            Cloudlet chosenTask = null; int chosenVm = -1; double chosenCt = minFirst ? Double.MAX_VALUE : -1;
-            for (final Cloudlet t : remaining) {
-                // earliest completion time of this task over all VMs
+        final boolean[] done = new boolean[cloudlets.size()];
+        for (int left = cloudlets.size(); left > 0; left--) {
+            int chosenTask = -1; int chosenVm = -1; double chosenCt = minFirst ? Double.MAX_VALUE : -1;
+            for (int i = 0; i < cloudlets.size(); i++) {
+                if (done[i]) continue;
+                final Cloudlet t = cloudlets.get(i);
+                // earliest completion time of this task over all VMs (ties -> lowest VM index)
                 int bestV = 0; double bestCt = Double.MAX_VALUE;
                 for (int v = 0; v < vms.size(); v++) {
                     final double ct = ready[v] + t.getLength() / rate(vms.get(v));
-                    if (ct < bestCt) { bestCt = ct; bestV = v; }
+                    if (ct < bestCt - 1e-9) { bestCt = ct; bestV = v; }
                 }
-                // Min-Min keeps the task whose best-CT is smallest; Max-Min the largest
-                if ((minFirst && bestCt < chosenCt) || (!minFirst && bestCt > chosenCt)) {
-                    chosenCt = bestCt; chosenTask = t; chosenVm = bestV;
+                // Min-Min keeps the task whose best-CT is smallest; Max-Min the largest (ties -> lowest task index)
+                if ((minFirst && bestCt < chosenCt - 1e-9) || (!minFirst && bestCt > chosenCt + 1e-9)) {
+                    chosenCt = bestCt; chosenTask = i; chosenVm = bestV;
                 }
             }
-            a.put(chosenTask, vms.get(chosenVm));
+            a.put(cloudlets.get(chosenTask), vms.get(chosenVm));
             ready[chosenVm] = chosenCt;
-            remaining.remove(chosenTask);
+            done[chosenTask] = true;
         }
         return a;
     }

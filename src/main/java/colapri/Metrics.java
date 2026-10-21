@@ -41,6 +41,24 @@ public final class Metrics {
         return new double[]{m, tq(v.size()) * std / Math.sqrt(v.size())};
     }
 
+    /** Paired comparison over seeds: mean and 95% CI half-width of (a_i - b_i), i.e. the per-seed difference
+     *  between two schedulers that saw the same workload. Overlapping marginal intervals say nothing about
+     *  the difference; this does. */
+    public static double[] pairedCi95(final List<Double> a, final List<Double> b) {
+        final int n = Math.min(a.size(), b.size());
+        final var d = new ArrayList<Double>(n);
+        for (int i = 0; i < n; i++) d.add(a.get(i) - b.get(i));
+        return meanCi95(d);
+    }
+
+    public static String pairedCi(final List<Double> a, final List<Double> b) {
+        final double[] mc = pairedCi95(a, b);
+        return String.format("%+.1f±%.1f", mc[0], mc[1]);
+    }
+
+    /** Version string printed at the top of every captured log (provenance). */
+    public static final String PACKAGE_VERSION = "colapri-cloud-scheduler 1.1.1 · CloudSim Plus 8.5.7";
+
     public static int weightOf(final int priority) {
         final int p = priority < 0 ? 0 : (priority > 9 ? 9 : priority);
         return CLASS_WEIGHT[p];

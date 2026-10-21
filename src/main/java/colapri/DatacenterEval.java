@@ -27,7 +27,7 @@ import java.util.function.Supplier;
  * EXP-B: datacenter-scale evaluation (multi-host, multi-VM). Crosses 4 task->VM MAPPING policies
  * (RoundRobin, Min-Min, Max-Min, Demand-Aware 2026) with 2 per-VM cloudlet SCHEDULERS (default
  * space-shared vs ColaPri). Shows that, regardless of how tasks are spread across VMs, swapping the
- * per-VM scheduler to ColaPri adds weighted per-class differentiation and bounds low-class waiting,
+ * per-VM scheduler to ColaPri re-orders per-class service (faster high class, slower low class),
  * while the mapping policy governs makespan / load balance. N_SEEDS instances, mean +/- CI95.
  */
 public class DatacenterEval {
@@ -96,7 +96,13 @@ public class DatacenterEval {
                 ci(makespan.get(k)), ci(loadCV.get(k)), ci(respHigh.get(k)), ci(respLow.get(k)),
                 ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(overhead.get(k)));
         System.out.println("\n  (makespan/loadCV ≈ mapping · resp.p0/p9 + starv ≈ per-VM scheduler:");
-        System.out.println("   para CADA mapping, ColaPri baja resp.p0 y acota waitMAX.p9 frente a default)");
+        System.out.println("   para CADA mapping, ColaPri baja resp.p0 y sube resp.p9 frente a default; makespan igual)");
+        System.out.println("  paired per-seed differences ColaPri - default (mean±CI95):");
+        for (final String mp : mappings.keySet())
+            System.out.printf("    %-14s makespan %s  resp.p0 %s  resp.p9 %s%n", mp,
+                Metrics.pairedCi(makespan.get(mp + "/ColaPri"), makespan.get(mp + "/default")),
+                Metrics.pairedCi(respHigh.get(mp + "/ColaPri"), respHigh.get(mp + "/default")),
+                Metrics.pairedCi(respLow.get(mp + "/ColaPri"), respLow.get(mp + "/default")));
 
         System.out.println("\n#  FIN EXP-B.");
         System.out.flush();

@@ -51,7 +51,7 @@ docker compose run --rm sim RigorousEval | Tee-Object -FilePath results\EXP-A.lo
 ### Everything in one go (stock Maven image, no build step)
 
 ```bash
-./scripts/run_all.sh [/absolute/path/to/traces]      # EXP-A..F, one log per experiment in results/
+./scripts/run_all.sh [/absolute/path/to/traces]      # EXP-A..F, one log per experiment in results/rerun/ (reference logs in results/ untouched)
 ```
 
 Approximate runtime on the reference host (Intel Core i7-14700KF, Windows 11, Docker Desktop):
@@ -106,6 +106,6 @@ against the logs line by line.
 
 ## 6. Strict long-term reproduction
 
-Pin the base image by digest in `Dockerfile` / `scripts/run_all.sh`
+The base image is pinned by digest in `Dockerfile` and `scripts/run_all.sh` (index sha256:99e61abc…, resolved 2026-10-21); the tag form
 (`maven:3.9-eclipse-temurin-21@sha256:<digest>` — `docker inspect --format '{{index .RepoDigests 0}}' maven:3.9-eclipse-temurin-21`),
 and cite the Zenodo record of the release you used (see `CITATION.cff`).

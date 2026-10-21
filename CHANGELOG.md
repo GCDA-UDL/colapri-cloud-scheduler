@@ -5,12 +5,34 @@ the Zenodo record (once created) archives each release.
 
 ## v1.1.1 — 2026-10-21
 
-Metadata-only release, created so that the GitHub–Zenodo integration (enabled after v1.1.0) archives
-the package. No code, log or figure changes relative to v1.1.0.
+Release deposited on Zenodo through the GitHub integration. A second independent audit of v1.1.0 found
+one latent defect (non-deterministic Min-Min/Max-Min) and several gaps in what the experiments reported;
+this release fixes the defect, adds the missing controls and re-captures every log.
 
-- Author affiliation updated to **SEMBAC, Universitat de Lleida** in `CITATION.cff`, `.zenodo.json` and
-  the README (the group joined SEMBAC in October 2026).
-- `ZENODO_CHECKLIST.md` rewritten for the GitHub-integration flow.
+- **Fixed:** `VmMappers.minMaxMin` iterated an identity-hash set and broke ties in the completion time by
+  that (JVM-dependent) order, so the Min-Min and Max-Min rows of EXP-B varied by up to 0.3 s between
+  runs. Candidates are now scanned in submission order with deterministic tie-breaking; three
+  consecutive runs of `DatacenterEval` are identical.
+- **Paired statistics:** every harness now prints the per-seed paired difference (mean ± CI95) between
+  ColaPri and its main comparator (SFQ, FCFS, strict priority, the default scheduler, the no-resync
+  ablation, the best fixed threshold, the weight controls). `Metrics.pairedCi95`.
+- **EXP-A gate scenario:** the adaptive scenario now isolates the gate with a θ=0 control and three
+  load levels (24 @ 0.3/s, 60 @ 0.55/s, 80 @ 3/s).
+- **EXP-E:** each dataset prints the length distribution of its pool (mean length, share of tasks
+  clipped to the 1000/12000 MI floor/ceiling, offered load ρ).
+- **EXP-F:** 240 s drain gap between the storm and the second calm phase (the second phase previously
+  started with ~90 tasks still queued); fixed-weight controls (always on, 3:1 / 2:1 / 1:1) added because
+  the activation degree scales the effective weight; paired differences printed. All EXP-F numbers
+  changed.
+- `scripts/compare_logs.py` is column-aware (drops `overhead.ms` wherever it sits; the previous version
+  dropped the last column, which in EXP-F is `cost`). `scripts/run_all.sh` writes to `results/rerun/`
+  and never overwrites the reference logs. Base image pinned by digest in `Dockerfile` and `run_all.sh`.
+- Every log starts with a provenance line (package version, CloudSim Plus version).
+- Figures regenerated; `fig_operation` now draws a 6:3:1 dispatch (it drew 7:2:1).
+- Metadata: version 1.1.1 in `pom.xml`, `CITATION.cff`, `.zenodo.json`; author affiliation
+  **SEMBAC, Universitat de Lleida**; second author signed as Rosana Tomàs; PROVENANCE file count 1452;
+  Javadoc fixes (zero-order Sugeno; DatacenterEval). `ZENODO_CHECKLIST.md` rewritten for the
+  GitHub-integration flow.
 
 ## v1.1.0 — 2026-10-20
 

@@ -36,10 +36,13 @@ public class ScalabilityEval {
 
         System.out.println("##########################################################################");
         System.out.println("#  EXP-C · Scalability (" + HOSTS + " hosts, " + VMS + " VMs, RoundRobin, " + N_SEEDS + " seeds, CI95)");
+        System.out.println("#  " + Metrics.PACKAGE_VERSION);
         System.out.println("##########################################################################");
         System.out.printf("%n%-22s %12s %12s %12s %12s%n", "config", "makespan", "resp.p0", "resp.p9", "overhead.ms");
 
+        final var paired = new ArrayList<String>();
         for (final int n : new int[]{200, 500, 1000}) {
+            final Map<String, List<Double>> MK = new java.util.LinkedHashMap<>(), P0 = new java.util.LinkedHashMap<>(), P9 = new java.util.LinkedHashMap<>();
             for (final String sched : new String[]{"default", "ColaPri"}) {
                 final Supplier<CloudletScheduler> sc = sched.equals("default")
                     ? CloudletSchedulerSpaceShared::new
@@ -51,9 +54,15 @@ public class ScalabilityEval {
                     final double[] r = run(specs, sc);
                     mk.add(r[0]); p0.add(r[1]); p9.add(r[2]); ov.add(r[3]);
                 }
+                MK.put(sched, mk); P0.put(sched, p0); P9.put(sched, p9);
                 System.out.printf("%-22s %12s %12s %12s %12s%n", n + "/" + sched, ci(mk), ci(p0), ci(p9), ci(ov));
             }
+            paired.add(String.format("    %-6d makespan %s  resp.p0 %s  resp.p9 %s", n,
+                Metrics.pairedCi(MK.get("ColaPri"), MK.get("default")), Metrics.pairedCi(P0.get("ColaPri"), P0.get("default")),
+                Metrics.pairedCi(P9.get("ColaPri"), P9.get("default"))));
         }
+        System.out.println("  paired per-seed differences ColaPri - default (mean±CI95):");
+        paired.forEach(System.out::println);
         System.out.println("\n  (ColaPri mantiene diferenciación p0<p9 a toda escala; overhead crece poco → barato vs DRL)");
         System.out.println("\n#  FIN EXP-C.");
         System.out.flush();

@@ -9,7 +9,7 @@ Reproducible code, experiment harnesses, captured results and trace provenance f
 > **ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task
 > Scheduling, Evaluated in CloudSim Plus** (submitted to *Simulation Modelling Practice and Theory*).
 
-**Authors:** Vitor L. da Silva, Rosa Ana Tomás, Joaquim Oliva, Fernando Guirado — SEMBAC, Universitat de
+**Authors:** Vitor L. da Silva, Rosana Tomàs, Joaquim Oliva, Fernando Guirado — SEMBAC, Universitat de
 Lleida, Spain.
 Canonical repository: [GCDA-UDL/colapri-cloud-scheduler](https://github.com/GCDA-UDL/colapri-cloud-scheduler)
 (mirror: `VitorDaSilvaUdL/colapri-cloud-scheduler`). Step-by-step instructions: [REPRODUCE.md](REPRODUCE.md).
@@ -19,9 +19,9 @@ properties evaluated rigorously (up to 30 seeds, 95% CI):
 
 1. **No starvation** — bounds the waiting time of low-priority classes (**−83%** max-wait vs. strict
    priority at the default 6:1 weights, with high-class response within 3% of FCFS; the weight moves
-   ColaPri along the FCFS ↔ strict-priority frontier: 20:1 → −35%, 60:1 → −10% at +7% high-class response).
+   ColaPri along the FCFS ↔ strict-priority frontier: 20:1 → −35%, 60:1 → −9% at +7% high-class response).
 2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.4**).
-3. **Load-adaptive, zero-cost at light load** — below a backlog threshold it behaves as FCFS; above it, it differentiates. Scheduler overhead ≈ **1.4 ms**.
+3. **Load-adaptive, zero-cost when the backlog is small** — below a backlog threshold it behaves as FCFS (reproduced to the decimal against a θ=0 control at ρ≈1.1); above it, it differentiates. Scheduler overhead ≈ **1.2 ms**.
 
 ColaPri is implemented as a `CloudletScheduler` using **persistent virtual-time tags**: the *k*-th tagged
 task of class *c* gets tag *k/w_c*, assigned once, with *k* resynchronised to the frontier (largest tag
@@ -66,7 +66,7 @@ Each is a `main` class; select it with `-Dexec.mainClass=colapri.<Class>`.
 | `ScalabilityEval`  | EXP-C · 200/500/1000 cloudlets (10 seeds) | makespan, per-class response, overhead vs. scale |
 | `SensitivityEval`  | EXP-D · parameter sweeps (30 seeds) | weight ratio, adaptive threshold, load, PEs |
 | `RealTraceRigorous`| EXP-E · 5 real traces (20 seeds) | per-class response on PlanetLab/Alibaba/Bitbrains/Materna/Azure |
-| `ActivationEval`   | EXP-F · automatic activation (10 train + 20 test seeds) | always-on / fixed / analytic / fuzzy / learned threshold |
+| `ActivationEval`   | EXP-F · automatic activation (10 train + 20 test seeds; calm → storm → drain → calm) | always-on / FCFS / fixed / analytic / fuzzy / learned + fixed-weight controls 3:1, 2:1, 1:1 |
 
 All metrics are reported as mean ± 95% CI. **`results/EXP-{A..F}.log`** are the captured logs behind
 every table in the paper. Simulated metrics (response, waiting, makespan) are seed-deterministic —
@@ -78,7 +78,7 @@ Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 
 | Experiment | Seeds | Feeds |
 |---|---|---|
-| EXP-A | 0–29 (30) | per-class, starvation (weight sweep), adaptive and idle-return tables/figures, abstract's 1.4 ms |
+| EXP-A | 0–29 (30) | per-class, starvation (weight sweep), gate (3 load levels × θ=15/θ=0/FCFS) and idle-return tables/figures, abstract's 1.2 ms; paired per-seed differences |
 | EXP-B | 0–19 (20) | datacenter mapping×scheduler table |
 | EXP-C | 0–9 (10) | scalability table |
 | EXP-D | 0–29 (30) | weight-ratio / threshold / load / PEs sweeps |
@@ -91,9 +91,11 @@ Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 weighted-RR), set by one of: `alwaysOn`, `fixed(θ)`, `analytic(lo,hi)` (closed-form ramp),
 `fuzzy(lo,hi)` (zero-order Sugeno), or `learned(table,width)` (offline lookup). All are O(1) and
 deterministic at inference. Every hyper-parameter (fixed θ, ramp placement, learned table) is selected on
-the 10 training seeds and reported on the 20 test seeds. EXP-F shows the cheap **analytic** ramp is at
-least as good as the offline-**learned** lookup and better than any fixed θ — so **no ML is needed** to
-tune ColaPri.
+the 10 training seeds and reported on the 20 test seeds. Because α scales the effective weight
+(`1 + α·(w−1)`), EXP-F also runs fixed-weight controls (always on, 3:1 / 2:1 / 1:1): they trace the
+response/starvation frontier along which the backlog-driven policies move. The cheap **analytic** ramp
+lands at or slightly inside that frontier, beats every on/off threshold and the offline-**learned**
+lookup — so **no ML is needed** to tune ColaPri.
 
 ### Real traces (EXP-E)
 
@@ -155,7 +157,7 @@ python figures/make_figures.py   # requires matplotlib
 ## Repository layout
 
 ```
-src/main/java/colapri/   schedulers (ColaPri + 7 baselines), mappers, metrics, seeded workload,
+src/main/java/colapri/   schedulers (ColaPri + 8 baselines), mappers, metrics, seeded workload,
                          trace loader, 6 experiment harnesses, CfsProbe
 results/                 captured logs (EXP-A..F) behind every table in the paper
 data/                    bundled PlanetLab / Bitbrains / Materna subsets + checksums.sha256 + PROVENANCE.md
@@ -173,7 +175,7 @@ CITATION.cff, .zenodo.json, CHANGELOG.md   citation + Zenodo deposit metadata + 
 @article{colapri2026,
   title   = {ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler
              for Cloud Task Scheduling, Evaluated in CloudSim Plus},
-  author  = {da Silva, Vitor Luiz and Tom{\'a}s, Rosa Ana and Oliva, Joaquim and Guirado, Fernando},
+  author  = {da Silva, Vitor Luiz and Tom{\`a}s, Rosana and Oliva, Joaquim and Guirado, Fernando},
   journal = {Simulation Modelling Practice and Theory},
   year    = {2026},
   note    = {Under review. Software: https://github.com/GCDA-UDL/colapri-cloud-scheduler (Zenodo DOI pending)}

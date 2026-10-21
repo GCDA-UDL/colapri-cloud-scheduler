@@ -5,8 +5,8 @@
 #   docker run --rm -v "$PWD/results:/workspace/results" colapri-sim RigorousEval      # EXP-A
 #   docker run --rm -v "$PWD/results:/workspace/results" -v "/path/to/traces:/traces:ro" colapri-sim RealTraceRigorous   # EXP-E
 #
-# For strict long-term reproduction pin the base image by digest (see REPRODUCE.md).
-FROM maven:3.9-eclipse-temurin-21
+# Base image pinned by digest (multi-arch index of maven:3.9-eclipse-temurin-21, resolved 2026-10-21).
+FROM maven:3.9-eclipse-temurin-21@sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320
 
 WORKDIR /workspace
 

@@ -8,7 +8,7 @@ package colapri;
  *   - {@link #alwaysOn()}      : alpha=1 always (no adaptation).
  *   - {@link #fixed(int)}      : step at a backlog threshold (the original ColaPri behaviour).
  *   - {@link #analytic(int,int)}: a closed-form ramp on backlog (cheap, principled equation).
- *   - {@link #fuzzy(int,int)}  : a small Mamdani controller on (backlog level, backlog growth).
+ *   - {@link #fuzzy(int,int)}  : a small zero-order Sugeno fuzzy controller on (backlog level, backlog growth).
  *   - {@link #learned(double[],int)}: a lookup table over backlog buckets, filled offline by
  *                                     coordinate-descent optimisation on training seeds (ML baseline).
  *
@@ -34,8 +34,8 @@ public interface ActivationPolicy {
     }
 
     /**
-     * Mamdani fuzzy controller. Inputs: backlog level (membership LOW/HIGH via a ramp over [lo,hi])
-     * and backlog growth sign. Rules (singleton outputs, weighted-average defuzzification):
+     * Zero-order Sugeno fuzzy controller (singleton consequents, weighted-average defuzzification).
+     * Inputs: backlog level (membership LOW/HIGH via a ramp over [lo,hi]) and backlog growth sign. Rules:
      *   R1: backlog HIGH                 -> alpha = 1.0
      *   R2: backlog LOW  and growing     -> alpha = 0.5   (pre-emptive ramp-up)
      *   R3: backlog LOW  and not growing -> alpha = 0.0   (stay cheap)

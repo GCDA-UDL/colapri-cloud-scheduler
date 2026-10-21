@@ -1,34 +1,38 @@
 #!/usr/bin/env python3
-"""Compare two experiment logs ignoring the host-dependent wall-clock overhead column.
-
-Usage: python scripts/compare_logs.py results/EXP-A.log /path/to/your/EXP-A.log
-
-Every simulated metric (response, waiting, makespan, starvation counts, Jain index) is
-seed-deterministic and must match to the last decimal; only `overhead.ms` varies with the host.
-Rows in blocks whose header contains "overhead" have their last numeric column dropped before
-comparison. Exit code 0 = identical, 1 = differences (printed as a unified diff).
+"""Column-aware comparison of two experiment logs ignoring the host-dependent `overhead.ms` column
+(wherever it sits in the header, e.g. second-to-last in EXP-F). Exit 0 = identical simulated metrics.
+Usage: python scripts/compare_logs.py A.log B.log
 """
 import difflib
 import re
 import sys
 
-NUM = re.compile(r"[-\d.]+±[-\d.]+|[-\d.]+(?=\s*$)")
+TOK = re.compile(r"[-\d.]+±[-\d.]+")
 
 
 def normalise(path):
-    out, drop_last = [], False
+    out, drop = [], None
     for line in open(path, encoding="utf-8"):
         line = line.rstrip("\n")
-        if re.search(r"\boverhead", line) and "±" not in line:
-            drop_last = True            # header of a block with an overhead column
-        elif line.strip().startswith(("===", "####", "[", "(")) or not line.strip():
-            drop_last = drop_last and "±" in line
-        if drop_last and "±" in line:
-            vals = NUM.findall(line)
-            if vals:
-                line = line[: line.rfind(vals[-1])].rstrip()
-        if re.search(r"start \d\d:\d\d:\d\d|\bstart \d", line):
-            continue                    # timestamps from run_all.sh
+        if re.search(r"\bstart \d\d:\d\d:\d\d|\bdone \d\d:\d\d", line):
+            continue
+        toks = line.split()
+        if toks and "±" not in line and any("overhead" in t for t in toks):
+            # header: index of the overhead column among the metric columns (name column excluded)
+            # headers may have multi-token first column ("mapping/scheduler", "config", "policy", "scheduler")
+            cols = toks[1:]
+            drop = next((i for i, t in enumerate(cols) if "overhead" in t), None)
+            out.append(line); continue
+        if line.strip().startswith(("===", "####", "[", "(")) or not line.strip():
+            if line.strip().startswith(("===", "####")):
+                drop = None
+            out.append(line); continue
+        vals = TOK.findall(line)
+        if drop is not None and vals and len(vals) > drop:
+            # rebuild: name + metric tokens without the overhead one
+            name = line[: line.find(vals[0])].rstrip()
+            vals = [v for i, v in enumerate(vals) if i != drop]
+            line = name + "  " + "  ".join(vals)
         out.append(line)
     return out
 
@@ -37,8 +41,6 @@ if __name__ == "__main__":
     a, b = sys.argv[1], sys.argv[2]
     la, lb = normalise(a), normalise(b)
     if la == lb:
-        print(f"IDENTICAL (simulated metrics): {a} == {b}")
-        sys.exit(0)
-    sys.stdout.writelines(difflib.unified_diff(la, lb, a, b, lineterm=""))
-    print()
+        print(f"IDENTICAL (simulated metrics): {a} == {b}"); sys.exit(0)
+    sys.stdout.writelines(l + "\n" for l in difflib.unified_diff(la, lb, a, b, lineterm="", n=1))
     sys.exit(1)

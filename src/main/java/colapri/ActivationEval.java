@@ -45,8 +45,9 @@ public class ActivationEval {
         Metrics.setClassWeights(Map.of(0, W_HIGH, 9, W_LOW));
 
         System.out.println("##########################################################################");
-        System.out.println("#  EXP-F · ColaPri AUTOMATIC activation (non-stationary load: calm->storm->calm)");
+        System.out.println("#  EXP-F · ColaPri AUTOMATIC activation (non-stationary load: calm->storm->drain->calm)");
         System.out.println("#  cost = resp.p0 + 10*starv.p9   (low = fast high-class, no low-class starvation)");
+        System.out.println("#  " + Metrics.PACKAGE_VERSION);
         System.out.println("##########################################################################");
 
         // ---- learn the lookup table offline on TRAIN seeds ----
@@ -83,16 +84,23 @@ public class ActivationEval {
         System.out.printf("  selected on TRAIN: analytic(%d,%d), fuzzy(%d,%d)%n", ra[0], ra[1], rf[0], rf[1]);
 
         // ---- evaluate all policies on TEST seeds ----
-        record Pol(String name, java.util.function.Supplier<ActivationPolicy> p) {}
+        //      The last three rows are weight controls (gate always on, smaller fixed weight): the activation
+        //      degree alpha scales the effective weight 1+alpha*(w-1), so a continuous activation policy and a
+        //      smaller fixed weight move along the same resp.p0 / starv.p9 frontier.
+        record Pol(String name, java.util.function.Supplier<ActivationPolicy> p, int w0, int w9) {}
         final List<Pol> policies = List.of(
-            new Pol("always-on", ActivationPolicy::alwaysOn),
-            new Pol("FCFS(theta=inf)", () -> ActivationPolicy.fixed(INF)),
-            new Pol("fixed(theta=15)", () -> ActivationPolicy.fixed(15)),
-            new Pol("best-fixed(theta=" + thetaName(bt) + ")", () -> ActivationPolicy.fixed(bt)),
-            new Pol("analytic(" + ra[0] + "," + ra[1] + ")", () -> ActivationPolicy.analytic(ra[0], ra[1])),
-            new Pol("fuzzy(" + rf[0] + "," + rf[1] + ")", () -> ActivationPolicy.fuzzy(rf[0], rf[1])),
-            new Pol("learned(lookup)", () -> ActivationPolicy.learned(table, BUCKET_W))
+            new Pol("always-on", ActivationPolicy::alwaysOn, W_HIGH, W_LOW),
+            new Pol("FCFS(theta=inf)", () -> ActivationPolicy.fixed(INF), W_HIGH, W_LOW),
+            new Pol("fixed(theta=15)", () -> ActivationPolicy.fixed(15), W_HIGH, W_LOW),
+            new Pol("best-fixed(theta=" + thetaName(bt) + ")", () -> ActivationPolicy.fixed(bt), W_HIGH, W_LOW),
+            new Pol("analytic(" + ra[0] + "," + ra[1] + ")", () -> ActivationPolicy.analytic(ra[0], ra[1]), W_HIGH, W_LOW),
+            new Pol("fuzzy(" + rf[0] + "," + rf[1] + ")", () -> ActivationPolicy.fuzzy(rf[0], rf[1]), W_HIGH, W_LOW),
+            new Pol("learned(lookup)", () -> ActivationPolicy.learned(table, BUCKET_W), W_HIGH, W_LOW),
+            new Pol("always-on w=3:1", ActivationPolicy::alwaysOn, 3, 1),
+            new Pol("always-on w=2:1", ActivationPolicy::alwaysOn, 2, 1),
+            new Pol("always-on w=1:1", ActivationPolicy::alwaysOn, 1, 1)
         );
+        final Map<String, List<Double>> costBy = new java.util.LinkedHashMap<>(), p0By = new java.util.LinkedHashMap<>(), stBy = new java.util.LinkedHashMap<>();
 
         System.out.printf("%n(TEST seeds %d..%d, mean+/-CI95)%n", TRAIN, TRAIN + TEST - 1);
         System.out.printf("%-22s %12s %12s %13s %10s %11s %10s%n",
@@ -102,7 +110,7 @@ public class ActivationEval {
             final var wmax = new ArrayList<Double>(); final var st = new ArrayList<Double>();
             final var ov = new ArrayList<Double>(); final var co = new ArrayList<Double>();
             for (long seed = TRAIN; seed < TRAIN + TEST; seed++) {
-                final var r = run(pol.p().get(), phased(seed));
+                final var r = run(pol.p().get(), phased(seed), pol.w0(), pol.w9());
                 final var f = r.finished();
                 p0.add(Metrics.meanResponseOfClass(f, 0));
                 p9.add(Metrics.meanResponseOfClass(f, 9));
@@ -111,11 +119,18 @@ public class ActivationEval {
                 ov.add(r.wallMs());
                 co.add(cost(f));
             }
+            costBy.put(pol.name(), co); p0By.put(pol.name(), p0); stBy.put(pol.name(), st);
             System.out.printf("%-22s %12s %12s %13s %10s %11s %10s%n", pol.name(),
                 ci(p0), ci(p9), ci(wmax), ci(st), ci(ov), ci(co));
         }
-        System.out.println("\n  (always-on penaliza la calma; fixed mal-ajusta una fase; analytic/fuzzy/learned");
-        System.out.println("   adaptan por fase -> menor coste sin entrenar (analytic/fuzzy) o con lookup barato)");
+        final String an = "analytic(" + ra[0] + "," + ra[1] + ")", bf = "best-fixed(theta=" + thetaName(bt) + ")";
+        System.out.println("\n  paired per-seed differences (mean±CI95 of the difference):");
+        for (final String other : new String[]{bf, "learned(lookup)", "always-on", "always-on w=3:1", "always-on w=2:1", "FCFS(theta=inf)"})
+            System.out.printf("    %-36s cost %s  resp.p0 %s  starv.p9 %s%n", an + " - " + other,
+                Metrics.pairedCi(costBy.get(an), costBy.get(other)), Metrics.pairedCi(p0By.get(an), p0By.get(other)),
+                Metrics.pairedCi(stBy.get(an), stBy.get(other)));
+        System.out.println("\n  (the activation degree scales the effective weight: a continuous policy and a smaller fixed weight");
+        System.out.println("   move along the same resp.p0 / starv.p9 frontier; the gate only chooses the point from the backlog)");
         System.out.println("\n#  FIN EXP-F.");
         System.out.flush();
         System.exit(0);
@@ -165,13 +180,19 @@ public class ActivationEval {
         return Metrics.meanResponseOfClass(f, 0) + 10.0 * Metrics.starvationCount(f, 9, STARV_THRESHOLD);
     }
 
-    // ---- non-stationary workload: calm (low rate) -> storm (high rate, mostly p0) -> calm ----
+    /** Gap between the end of the storm and the second calm phase. The storm (140 tasks in ~70 s against a
+     *  capacity of 0.5 tasks/s) leaves about 105 tasks queued; with a 5 s gap (v1.1.0) the "second calm"
+     *  started with ~90 tasks still waiting, i.e. it was a drain phase, not a calm one. 240 s lets the queue
+     *  empty, so the workload is calm -> storm -> drain -> calm. */
+    private static final double DRAIN_GAP = 240.0;
+
+    // ---- non-stationary workload: calm (low rate) -> storm (high rate, mostly p0) -> drain -> calm ----
     private static List<Workload.Spec> phased(final long seed) {
         final var c1 = Workload.seeded(seed, 40, 0.4, new int[]{0, 9}, new int[]{1, 1}, BASE_LEN, 0.3, 0.2);
         final var st = Workload.seeded(seed + 1000, 140, 2.0, new int[]{0, 9}, new int[]{5, 1}, BASE_LEN, 0.3, 0.2);
         final var c2 = Workload.seeded(seed + 2000, 40, 0.4, new int[]{0, 9}, new int[]{1, 1}, BASE_LEN, 0.3, 0.2);
         final double off1 = lastArrival(c1) + 5;
-        final double off2 = off1 + lastArrival(st) + 5;
+        final double off2 = off1 + lastArrival(st) + DRAIN_GAP;
         final var all = new ArrayList<Workload.Spec>(c1.size() + st.size() + c2.size());
         all.addAll(c1);
         for (final var s : st) all.add(new Workload.Spec(s.arrival() + off1, s.priority(), s.length()));
@@ -197,6 +218,10 @@ public class ActivationEval {
     }
 
     private static Result run(final ActivationPolicy policy, final List<Workload.Spec> specs) {
+        return run(policy, specs, W_HIGH, W_LOW);
+    }
+
+    private static Result run(final ActivationPolicy policy, final List<Workload.Spec> specs, final int w0, final int w9) {
         final var sim = new CloudSimPlus();
         final var peList = new ArrayList<Pe>(VM_PES);
         for (int i = 0; i < VM_PES; i++) peList.add(new PeSimple(MIPS));
@@ -206,7 +231,7 @@ public class ActivationEval {
         broker.setVmDestructionDelay(1_000_000.0);
         final var vm = new VmPatched(MIPS, VM_PES);
         vm.setRam(4096).setBw(10_000).setSize(10_000).setCloudletScheduler(
-            new CloudletSchedulerColaPri().setPriorityWeight(0, W_HIGH).setPriorityWeight(9, W_LOW)
+            new CloudletSchedulerColaPri().setPriorityWeight(0, w0).setPriorityWeight(9, w9)
                 .setActivationPolicy(policy));
         broker.submitVmList(List.of(vm));
         final var cloudlets = new ArrayList<Cloudlet>(specs.size());

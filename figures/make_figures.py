@@ -69,7 +69,7 @@ def fig_operation():
 
     # dispatch order
     ax.text(8.7, 4.62, "(3) dispatch order\n($\\propto$ weight, no starvation)", ha="center", fontsize=8.6, color=DARK)
-    disp = [0, 0, 0, 5, 0, 0, 0, 5, 9, 0]
+    disp = [0, 0, 5, 0, 0, 5, 0, 0, 5, 9]   # 6:3:1 over ten slots, as in the caption
     for i, c in enumerate(disp):
         y = 3.9 - i * 0.32
         _toks(ax, 7.7, y, [c], s=0.2, gap=0)
@@ -198,20 +198,25 @@ def fig_traces():
 
 def fig_activation():
     # EXP-F: trade-off resp.p0 (x, lower=faster high class) vs starv.p9 (y, lower=less starvation)
-    # EXP-F TEST seeds (20): resp.p0 vs starv.p9
-    name = ["always-on", "FCFS", "fixed(15)", "best-fixed(40)", "analytic(40,80)", "fuzzy(30,60)", "learned"]
-    p0 = [107.3, 113.6, 108.2, 109.8, 119.0, 109.7, 118.6]
-    st = [37.3, 36.1, 37.0, 35.8, 25.9, 33.8, 28.9]
-    col = [GREY, GREY, AMBER, AMBER, GREEN, GREY, BLUE]
-    mk = ["o", "D", "s", "s", "*", "o", "^"]
-    off = {"always-on": (6, 5), "FCFS": (6, -10), "fixed(15)": (6, -10), "best-fixed(40)": (6, 5),
-           "analytic(40,80)": (-72, 8), "fuzzy(30,60)": (6, 5), "learned": (6, 5)}
+    # EXP-F TEST seeds (20): resp.p0 vs starv.p9; the fixed-weight controls trace the frontier
+    name = ["always-on 6:1", "FCFS", "fixed(15)", "best-fixed(5)", "analytic(40,80)", "fuzzy(30,60)", "learned",
+            "w=3:1", "w=2:1", "w=1:1"]
+    p0 = [83.7, 86.7, 84.3, 83.7, 92.6, 85.5, 94.0, 92.1, 95.3, 98.6]
+    st = [17.5, 16.5, 17.4, 17.5, 6.9, 14.5, 9.0, 12.6, 7.9, 0.9]
+    col = [GREY, GREY, AMBER, AMBER, GREEN, GREY, BLUE, DARK, DARK, DARK]
+    mk = ["o", "D", "s", "s", "*", "o", "^", "P", "P", "P"]
+    off = {"always-on 6:1": (-10, 11), "FCFS": (6, -12), "fixed(15)": (8, 6), "best-fixed(5)": (8, -16),
+           "analytic(40,80)": (-74, 6), "fuzzy(30,60)": (8, -12), "learned": (6, 5),
+           "w=3:1": (6, 5), "w=2:1": (6, 5), "w=1:1": (-30, 8)}
     fig, ax = plt.subplots(figsize=(6.2, 3.6))
+    ax.set_xlim(81.5, 100.5); ax.set_ylim(-0.5, 20)
+    ax.plot([83.7, 92.1, 95.3, 98.6], [17.5, 12.6, 7.9, 0.9], ":", color=DARK, lw=1.0, zorder=2, label="fixed-weight frontier")
     for i in range(len(name)):
         ax.scatter(p0[i], st[i], s=160 if mk[i] == "*" else 90, c=col[i], marker=mk[i],
                    edgecolors="black", linewidths=0.5, zorder=3)
         ax.annotate(name[i], (p0[i], st[i]), textcoords="offset points",
                     xytext=off[name[i]], fontsize=8)
+    ax.legend(fontsize=8, loc="upper right")
     ax.set_xlabel("high-class response p0 (s)  —  lower is better")
     ax.set_ylabel("low-class starvation p9  —  lower is better")
     ax.set_title("EXP-F: activation policies (bottom-left = better on both)")
@@ -327,9 +332,10 @@ def fig_pareto_starv():
     col = [GREY, GREY, RED, AMBER, BLUE, BLUE, BLUE, BLUE, GREEN, GREEN, GREEN, BLUE]
     mk = ["o", "o", "s", "s", "^", "^", "^", "D", "*", "*", "*", "D"]
     offs = {"SFQ 6:1": (-44, -14), "DFPO": (7, -12), "EqualShare": (7, 4), "PS": (-20, 8),
-            "SFQ 60:1": (7, -12), "Strict": (7, -4), "ColaPri 60:1": (-70, 8), "ColaPri 20:1": (7, 5),
+            "SFQ 60:1": (9, -16), "Strict": (9, -3), "ColaPri 60:1": (9, 9), "ColaPri 20:1": (7, 5),
             "ColaPri 6:1": (7, 5), "SJF": (7, 5), "FCFS": (7, 5), "Aging": (7, 5)}
     fig, ax = plt.subplots(figsize=(6.2, 3.8))
+    ax.set_xlim(24, 92)
     ax.plot([46.5, 35.3, 30.1], [56.9, 223.8, 311.5], "--", color=GREEN, lw=1.0, zorder=2)
     for i in range(len(name)):
         ax.scatter(p0[i], wm[i], s=190 if mk[i] == "*" else 95, c=col[i], marker=mk[i],
@@ -343,17 +349,20 @@ def fig_pareto_starv():
 
 
 def fig_adaptive():
-    """ColaPri == FCFS under light load; differentiates under heavy load."""
-    fig, axes = plt.subplots(1, 2, figsize=(7.6, 3.2), sharey=False)
-    for ax, title, f, c in [(axes[0], "light load (no backlog)", [4.1, 4.1], [4.1, 4.1]),       # EXP-A ADAPTIVE
-                            (axes[1], "heavy load (burst)", [72.9, 71.9], [44.9, 98.5])]:
-        x = np.arange(2); w = 0.36
-        ax.bar(x - w / 2, f, w, label="FCFS", color=GREY)
-        ax.bar(x + w / 2, c, w, label="ColaPri", color=GREEN)
-        ax.set_xticks(x); ax.set_xticklabels(["p0", "p9"]); ax.set_title(title, fontsize=10)
+    """The gate isolated: FCFS vs gated ColaPri (theta=15) vs ungated ColaPri (theta=0) at three loads (EXP-A ADAPTIVE)."""
+    fig, axes = plt.subplots(1, 3, figsize=(9.6, 3.2), sharey=False)
+    panels = [(axes[0], "light load (24 @ 0.3/s, no queue)", [4.1, 4.1], [4.1, 4.1], [4.1, 4.1]),
+              (axes[1], "moderate load (60 @ 0.55/s, backlog < 15)", [11.8, 11.9], [11.8, 11.9], [5.8, 17.9]),
+              (axes[2], "burst (80 @ 3/s)", [72.9, 71.9], [44.9, 98.5], [43.7, 99.9])]
+    for ax, title, f, g, u in panels:
+        x = np.arange(2); w = 0.26
+        ax.bar(x - w, f, w, label="FCFS", color=GREY)
+        ax.bar(x, g, w, label=r"ColaPri $\theta$=15 (gated)", color=GREEN)
+        ax.bar(x + w, u, w, label=r"ColaPri $\theta$=0 (ungated)", color=BLUE)
+        ax.set_xticks(x); ax.set_xticklabels(["p0", "p9"]); ax.set_title(title, fontsize=9)
         ax.set_ylabel("mean response (s)")
-        ax.legend(fontsize=8)
-    fig.suptitle("Adaptive activation: free when idle, differentiates under load", fontsize=10)
+    axes[1].legend(fontsize=7.5, loc="upper left")
+    fig.suptitle("The gate isolated: no queue -> all equal; small backlog -> gated = FCFS, ungated differentiates; burst -> both differentiate", fontsize=9)
     fig.savefig(os.path.join(OUT, "fig_adaptive.pdf")); plt.close(fig)
 
 
@@ -374,7 +383,7 @@ def fig_datacenter():
 def fig_scalability():
     """Differentiation grows with scale; makespan unchanged; overhead small."""
     n = [200, 500, 1000]
-    d0 = [14.7, 34.5, 67.2]; c0 = [14.2, 31.3, 58.9]; c9 = [16.0, 41.2, 85.2]; ov = [14.2, 13.6, 36.2]  # EXP-C.log
+    d0 = [14.7, 34.5, 67.2]; c0 = [14.2, 31.3, 58.9]; c9 = [16.0, 41.2, 85.2]; ov = [10.5, 11.8, 37.3]  # EXP-C.log (v1.1.1)
     fig, ax1 = plt.subplots(figsize=(6.4, 3.4))
     ax1.plot(n, c0, "o-", color=GREEN, label="ColaPri p0")
     ax1.plot(n, c9, "s-", color=AMBER, label="ColaPri p9")

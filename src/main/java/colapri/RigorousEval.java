@@ -53,6 +53,7 @@ public class RigorousEval {
         System.out.println("##########################################################################");
         System.out.println("#  EXP-A · ColaPri rigorous scheduling eval (W1 synthetic, " + N_SEEDS + " seeds, CI95)");
         System.out.println("#  overhead = wall time of sim.start() (proxy for scheduling decision cost)");
+        System.out.println("#  " + Metrics.PACKAGE_VERSION);
         System.out.println("##########################################################################");
 
         scenarioMain();
@@ -97,6 +98,14 @@ public class RigorousEval {
                 ci(respHigh.get(k)), ci(respMid.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)),
                 ci(starvLow.get(k)), ci(jain.get(k)), ci(overhead.get(k)));
         System.out.println("  (resp por clase: FCFS≈plano · Strict≈extremo · ColaPri≈graduado p0<p5<p9 · Jain alto=mejor)");
+        System.out.println("  paired per-seed differences (mean±CI95 of the difference):");
+        System.out.printf("    %-28s resp.p0 %s  resp.p5 %s  resp.p9 %s%n", "ColaPri - SFQ-weighted",
+            Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("SFQ-weighted")),
+            Metrics.pairedCi(respMid.get("ColaPri"), respMid.get("SFQ-weighted")),
+            Metrics.pairedCi(respLow.get("ColaPri"), respLow.get("SFQ-weighted")));
+        System.out.printf("    %-28s resp.p0 %s  resp.p9 %s%n", "ColaPri - FCFS",
+            Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("FCFS")),
+            Metrics.pairedCi(respLow.get("ColaPri"), respLow.get("FCFS")));
     }
 
     // ---- STARVATION isolated: continuous high-priority arrivals, NOT saturated ----
@@ -122,32 +131,46 @@ public class RigorousEval {
         for (final String k : schedulers.keySet())
             System.out.printf("%-16s %14s %12s %14s%n", k, ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(respHigh.get(k)));
         System.out.println("  (Strict: waitMAX.p9 explota · ColaPri: acotada, manteniendo resp.p0 baja)");
+        System.out.println("  paired per-seed differences (mean±CI95 of the difference):");
+        for (final String[] pr : new String[][]{{"ColaPri", "SFQ-weighted"}, {"ColaPri(60:1)", "SFQ(60:1)"},
+                                                {"ColaPri", "FCFS"}, {"ColaPri(60:1)", "StrictPriority"}})
+            System.out.printf("    %-30s waitMAX.p9 %s  starv.p9 %s  resp.p0 %s%n", pr[0] + " - " + pr[1],
+                Metrics.pairedCi(waitMaxLow.get(pr[0]), waitMaxLow.get(pr[1])),
+                Metrics.pairedCi(starvLow.get(pr[0]), starvLow.get(pr[1])),
+                Metrics.pairedCi(respHigh.get(pr[0]), respHigh.get(pr[1])));
     }
 
-    // ---- ADAPTIVE: below threshold ColaPri == FCFS; above it differentiates ----
+    // ---- ADAPTIVE: the gate (theta=15) is isolated against the ungated scheduler (theta=0) and FCFS at three
+    //      load levels: light (no backlog: every scheduler coincides), moderate (small backlog below the
+    //      threshold: only the ungated ColaPri differentiates) and heavy burst (both activate) ----
     private static void scenarioAdaptive() {
-        System.out.println("\n\n=== ADAPTIVE (umbral=15) · carga BAJA vs ALTA, 30 seeds ===");
-        final Supplier<CloudletScheduler> adapt =
-            () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(9, 1).setAdaptiveThreshold(15);
-        final Supplier<CloudletScheduler> fcfs = CloudletSchedulerSpaceShared::new;
-        final var loLevels = new String[]{"BAJA (sin backlog)", "ALTA (ráfaga, backlog)"};
-        final double[] rates = {0.3, 3.0};
-        final int[] ns = {24, 80};
-        for (int s = 0; s < 2; s++) {
-            final var dH_f = new ArrayList<Double>(); final var dH_c = new ArrayList<Double>();
-            final var dL_f = new ArrayList<Double>(); final var dL_c = new ArrayList<Double>();
+        System.out.println("\n\n=== ADAPTIVE (umbral=15 vs umbral=0 vs FCFS) · carga BAJA / MODERADA / ALTA, 30 seeds ===");
+        final Map<String, Supplier<CloudletScheduler>> m = new LinkedHashMap<>();
+        m.put("FCFS", CloudletSchedulerSpaceShared::new);
+        m.put("ColaPri(theta=15)", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(9, 1).setAdaptiveThreshold(15));
+        m.put("ColaPri(theta=0)", () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(9, 1));
+        final var levels = new String[]{"BAJA (24 tareas @0.3/s, rho~0.6, sin backlog)", "MODERADA (60 tareas @0.55/s, rho~1.1, backlog < umbral)", "ALTA (80 tareas @3/s, rafaga, rho~6)"};
+        final double[] rates = {0.3, 0.55, 3.0};
+        final int[] ns = {24, 60, 80};
+        for (int s = 0; s < 3; s++) {
+            final Map<String, List<Double>> p0 = init(m), p9 = init(m), bk = init(m);
             for (long seed = 0; seed < N_SEEDS; seed++) {
                 final var w = Workload.seeded(seed, ns[s], rates[s], new int[]{0, 9}, new int[]{1, 1}, BASE_LEN, 0.3, 0.2);
-                final var ff = run(fcfs, w, false).finished();
-                final var cf = run(adapt, w, false).finished();
-                dH_f.add(Metrics.meanResponseOfClass(ff, 0)); dL_f.add(Metrics.meanResponseOfClass(ff, 9));
-                dH_c.add(Metrics.meanResponseOfClass(cf, 0)); dL_c.add(Metrics.meanResponseOfClass(cf, 9));
+                for (final var e : m.entrySet()) {
+                    final var f = run(e.getValue(), w, false).finished();
+                    p0.get(e.getKey()).add(Metrics.meanResponseOfClass(f, 0));
+                    p9.get(e.getKey()).add(Metrics.meanResponseOfClass(f, 9));
+                    bk.get(e.getKey()).add(Metrics.maxWaitOfClass(f, 9));
+                }
             }
-            System.out.printf("%n  carga %s:%n", loLevels[s]);
-            System.out.printf("    %-16s resp.p0=%-14s resp.p9=%-14s%n", "FCFS", ci(dH_f), ci(dL_f));
-            System.out.printf("    %-16s resp.p0=%-14s resp.p9=%-14s%n", "ColaPri(adapt)", ci(dH_c), ci(dL_c));
+            System.out.printf("%n  carga %s:%n", levels[s]);
+            for (final String k : m.keySet())
+                System.out.printf("    %-18s resp.p0=%-12s resp.p9=%-12s waitMAX.p9=%-12s%n", k, ci(p0.get(k)), ci(p9.get(k)), ci(bk.get(k)));
+            System.out.printf("    paired: theta=15 - FCFS resp.p0 %s resp.p9 %s | theta=0 - FCFS resp.p0 %s resp.p9 %s%n",
+                Metrics.pairedCi(p0.get("ColaPri(theta=15)"), p0.get("FCFS")), Metrics.pairedCi(p9.get("ColaPri(theta=15)"), p9.get("FCFS")),
+                Metrics.pairedCi(p0.get("ColaPri(theta=0)"), p0.get("FCFS")), Metrics.pairedCi(p9.get("ColaPri(theta=0)"), p9.get("FCFS")));
         }
-        System.out.println("  (BAJA: ColaPri≈FCFS, p0≈p9 → no diferencia, coste cero · ALTA: p0<p9 → se activa)");
+        System.out.println("  (BAJA: todos iguales, no hay cola · MODERADA: theta=15 sigue a FCFS, theta=0 diferencia · ALTA: ambos diferencian)");
     }
 
     // ---- IDLE RETURN: a low class that was idle returns while the high class is backlogged ----
@@ -178,6 +201,9 @@ public class RigorousEval {
         for (final String k : m.keySet())
             System.out.printf("%-16s %12s %18s %14s %14s%n", k, ci(maxRun.get(k)), ci(respHighWin.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)));
         System.out.println("  (sin resincronización la clase que vuelve acapara una racha larga y retrasa a p0; con resincronización se intercala 6:1)");
+        System.out.printf("  paired: ColaPri - ColaPri(no-sync) maxRun.p9 %s resp.p0[300,380) %s | ColaPri - SFQ-weighted maxRun.p9 %s resp.p0[300,380) %s%n",
+            Metrics.pairedCi(maxRun.get("ColaPri"), maxRun.get("ColaPri(no-sync)")), Metrics.pairedCi(respHighWin.get("ColaPri"), respHighWin.get("ColaPri(no-sync)")),
+            Metrics.pairedCi(maxRun.get("ColaPri"), maxRun.get("SFQ-weighted")), Metrics.pairedCi(respHighWin.get("ColaPri"), respHighWin.get("SFQ-weighted")));
     }
 
     // ---- infra ----

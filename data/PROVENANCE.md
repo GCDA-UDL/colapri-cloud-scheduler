@@ -2,7 +2,7 @@
 
 EXP-E consumes five trace directories, mounted at `/traces` (layout in the main README).
 `checksums.sha256` in this folder lists the SHA-256 of **every input file actually used** in the
-paper's experiments (1402 files). Verify with:
+paper's experiments (1452 files: 1252 bundled + 200 external). Verify with:
 
 ```bash
 cd /path/to/traces && sha256sum -c /path/to/data/checksums.sha256

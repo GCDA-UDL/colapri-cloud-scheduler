@@ -37,6 +37,7 @@ public class SensitivityEval {
 
         System.out.println("##########################################################################");
         System.out.println("#  EXP-D · ColaPri parameter sensitivity (" + N_SEEDS + " seeds, CI95)");
+        System.out.println("#  " + Metrics.PACKAGE_VERSION);
         System.out.println("##########################################################################");
 
         d1Weights();

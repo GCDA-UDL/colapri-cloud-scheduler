@@ -52,6 +52,9 @@ public class RealTraceRigorous {
         System.out.println("##########################################################################");
         System.out.println("#  EXP-E · ColaPri on REAL traces (" + N_SEEDS + " seeds, subsample " + SAMPLE + " VMs, CI95)");
         System.out.println("#  priority by burstiness: bursty=interactive(p0) ... stable=batch(p9)");
+        System.out.println("#  " + Metrics.PACKAGE_VERSION);
+        System.out.println("#  task length = clamp(0.3 * sum(CPU series), 1000, 12000) MI; one arrival every " + SPACING + " s;");
+        System.out.println("#  rho = mean length / (MIPS * VM_PES * spacing); 'floor'/'ceiling' = share of tasks clipped to 1000 / 12000 MI");
         System.out.println("##########################################################################");
 
         final Map<String, Supplier<CloudletScheduler>> scheds = new LinkedHashMap<>();
@@ -68,6 +71,16 @@ public class RealTraceRigorous {
             final var raw = TraceLoader.loadRaw(w.dir(), w.fmt(), 200);
             if (raw.size() < 6) { System.out.println("\n[" + w.name() + "] SIN DATOS en " + w.dir()); continue; }
             System.out.printf("%n========== %s (%d VMs disponibles, subsample %d) ==========%n", w.name(), raw.size(), Math.min(SAMPLE, raw.size()));
+            {   // what the trace-to-task reduction keeps: length distribution of the pool (same rule as TraceLoader.sample)
+                int floor = 0, ceil = 0; double sum = 0;
+                for (final double[] v : raw) {
+                    final double len = Math.max(1000, Math.min(12000, v[0] * 0.3));
+                    sum += len; if (v[0] * 0.3 <= 1000) floor++; if (v[0] * 0.3 >= 12000) ceil++;
+                }
+                final double meanLen = sum / raw.size();
+                System.out.printf("  pool: mean length %.0f MI, floor %.1f%%, ceiling %.1f%%, rho~%.2f%n",
+                    meanLen, 100.0 * floor / raw.size(), 100.0 * ceil / raw.size(), meanLen / (MIPS * VM_PES * SPACING));
+            }
             final Map<String, List<Double>> respHigh = init(scheds), respLow = init(scheds),
                 waitMaxLow = init(scheds), starvLow = init(scheds), jain = init(scheds);
             for (long seed = 0; seed < N_SEEDS; seed++) {
@@ -86,6 +99,10 @@ public class RealTraceRigorous {
                 System.out.printf("%-16s %14s %14s %14s %10s %8s%n", k,
                     ci(respHigh.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(jain.get(k)));
             System.out.println("  (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)");
+            System.out.printf("  paired: ColaPri - SFQ-weighted resp.p0 %s resp.p9 %s waitMAX.p9 %s | ColaPri - FCFS resp.p0 %s | ColaPri - StrictPriority waitMAX.p9 %s starv.p9 %s%n",
+                Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("SFQ-weighted")), Metrics.pairedCi(respLow.get("ColaPri"), respLow.get("SFQ-weighted")),
+                Metrics.pairedCi(waitMaxLow.get("ColaPri"), waitMaxLow.get("SFQ-weighted")), Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("FCFS")),
+                Metrics.pairedCi(waitMaxLow.get("ColaPri"), waitMaxLow.get("StrictPriority")), Metrics.pairedCi(starvLow.get("ColaPri"), starvLow.get("StrictPriority")));
         }
 
         System.out.println("\n#  FIN EXP-E.");
