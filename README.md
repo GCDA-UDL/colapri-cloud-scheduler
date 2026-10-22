@@ -7,7 +7,7 @@
 Reproducible code, experiment harnesses, captured results and trace provenance for the paper:
 
 > **ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task
-> Scheduling, Evaluated in CloudSim Plus** (submitted to *Simulation Modelling Practice and Theory*).
+> Scheduling** (submitted to *Simulation Modelling Practice and Theory*).
 
 **Authors:** Vitor L. da Silva, Rosana Tomàs, Joaquim Oliva, Fernando Guirado — SEMBAC, Universitat de
 Lleida, Spain.
@@ -21,7 +21,7 @@ properties evaluated rigorously (up to 30 seeds, 95% CI):
    priority at the default 6:1 weights, with high-class response within 3% of FCFS; the weight moves
    ColaPri along the FCFS ↔ strict-priority frontier: 20:1 → −35%, 60:1 → −9% at +7% high-class response).
 2. **Tunable weighted differentiation** — per-class response ratio scales with the configured weight (**1.0 → 2.4**).
-3. **Load-adaptive, zero-cost when the backlog is small** — below a backlog threshold it behaves as FCFS (reproduced to the decimal against a θ=0 control at ρ≈1.1); above it, it differentiates. Scheduler overhead ≈ **1.2 ms**.
+3. **Load-adaptive, zero-cost when the backlog is small** — below a backlog threshold it behaves as FCFS (reproduced to the decimal against a θ=0 control at ρ≈1.1); above it, it differentiates. Scheduler overhead ≈ **1.4 ms**.
 
 ColaPri is implemented as a `CloudletScheduler` using **persistent virtual-time tags**: the *k*-th tagged
 task of class *c* gets tag *k/w_c*, assigned once, with *k* resynchronised to the frontier (largest tag
@@ -72,13 +72,16 @@ All metrics are reported as mean ± 95% CI. **`results/EXP-{A..F}.log`** are the
 every table in the paper. Simulated metrics (response, waiting, makespan) are seed-deterministic —
 re-running reproduces them bit-identically; only the wall-clock `overhead.ms` column varies with the
 host (reference host: Intel Core i7-14700KF, 32 GB RAM, Windows 11, Docker, Temurin JDK 21).
+The `JFIw` / `JFI1` columns (EXP-A MAIN, EXP-B, EXP-C) are Jain's fairness index over the per-class
+dispatches normalised by weight (`JFIw`, the proportional-share criterion) or by 1 (`JFI1`, equal share),
+counted up to the first class drain (`Metrics.jainNormalisedService`).
 Reproduce everything with one command: `./scripts/run_all.sh [/path/to/traces]`.
 
 ### Seeds / paper-table manifest
 
 | Experiment | Seeds | Feeds |
 |---|---|---|
-| EXP-A | 0–29 (30) | per-class, starvation (weight sweep), gate (3 load levels × θ=15/θ=0/FCFS) and idle-return tables/figures, abstract's 1.2 ms; paired per-seed differences |
+| EXP-A | 0–29 (30) | per-class, starvation (weight sweep), gate (3 load levels × θ=15/θ=0/FCFS) and idle-return tables/figures, Jain-index table, abstract's 1.4 ms; paired per-seed differences |
 | EXP-B | 0–19 (20) | datacenter mapping×scheduler table |
 | EXP-C | 0–9 (10) | scalability table |
 | EXP-D | 0–29 (30) | weight-ratio / threshold / load / PEs sweeps |
@@ -174,7 +177,7 @@ CITATION.cff, .zenodo.json, CHANGELOG.md   citation + Zenodo deposit metadata + 
 ```bibtex
 @article{colapri2026,
   title   = {ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler
-             for Cloud Task Scheduling, Evaluated in CloudSim Plus},
+             for Cloud Task Scheduling},
   author  = {da Silva, Vitor Luiz and Tom{\`a}s, Rosana and Oliva, Joaquim and Guirado, Fernando},
   journal = {Simulation Modelling Practice and Theory},
   year    = {2026},

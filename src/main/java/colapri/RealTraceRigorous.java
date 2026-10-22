@@ -82,7 +82,7 @@ public class RealTraceRigorous {
                     meanLen, 100.0 * floor / raw.size(), 100.0 * ceil / raw.size(), meanLen / (MIPS * VM_PES * SPACING));
             }
             final Map<String, List<Double>> respHigh = init(scheds), respLow = init(scheds),
-                waitMaxLow = init(scheds), starvLow = init(scheds), jain = init(scheds);
+                waitMaxLow = init(scheds), starvLow = init(scheds);
             for (long seed = 0; seed < N_SEEDS; seed++) {
                 final List<TaskSpec> specs = TraceLoader.sample(raw, seed, SAMPLE, SPACING);
                 for (final var e : scheds.entrySet()) {
@@ -91,13 +91,12 @@ public class RealTraceRigorous {
                     respLow.get(e.getKey()).add(Metrics.meanResponseOfClass(f, 9));
                     waitMaxLow.get(e.getKey()).add(Metrics.maxWaitOfClass(f, 9));
                     starvLow.get(e.getKey()).add((double) Metrics.starvationCount(f, 9, STARV_THRESHOLD));
-                    jain.get(e.getKey()).add(Metrics.jainWeighted(f));
                 }
             }
-            System.out.printf("%-16s %14s %14s %14s %10s %8s%n", "scheduler", "resp.p0", "resp.p9", "waitMAX.p9", "starv.p9", "Jain");
+            System.out.printf("%-16s %14s %14s %14s %10s%n", "scheduler", "resp.p0", "resp.p9", "waitMAX.p9", "starv.p9");
             for (final String k : scheds.keySet())
-                System.out.printf("%-16s %14s %14s %14s %10s %8s%n", k,
-                    ci(respHigh.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(jain.get(k)));
+                System.out.printf("%-16s %14s %14s %14s %10s%n", k,
+                    ci(respHigh.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)), ci(starvLow.get(k)));
             System.out.println("  (ColaPri debe bajar resp.p0 (interactiva) vs FCFS y acotar waitMAX.p9 vs StrictPriority)");
             System.out.printf("  paired: ColaPri - SFQ-weighted resp.p0 %s resp.p9 %s waitMAX.p9 %s | ColaPri - FCFS resp.p0 %s | ColaPri - StrictPriority waitMAX.p9 %s starv.p9 %s%n",
                 Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("SFQ-weighted")), Metrics.pairedCi(respLow.get("ColaPri"), respLow.get("SFQ-weighted")),

@@ -73,7 +73,7 @@ public class RigorousEval {
         // metric samples per scheduler
         final Map<String, List<Double>> respHigh = init(schedulers), p95High = init(schedulers),
             respMid = init(schedulers), respLow = init(schedulers), waitMaxLow = init(schedulers),
-            starvLow = init(schedulers), jain = init(schedulers), makespan = init(schedulers), overhead = init(schedulers);
+            starvLow = init(schedulers), jfiW = init(schedulers), jfi1 = init(schedulers), makespan = init(schedulers), overhead = init(schedulers);
 
         for (long seed = 0; seed < N_SEEDS; seed++) {
             final var w = Workload.seeded(seed, 60, 5.0, new int[]{0, 5, 9}, new int[]{3, 2, 1}, BASE_LEN, 0.3, 0.2);
@@ -86,18 +86,21 @@ public class RigorousEval {
                 respLow.get(e.getKey()).add(Metrics.meanResponseOfClass(f, 9));
                 waitMaxLow.get(e.getKey()).add(Metrics.maxWaitOfClass(f, 9));
                 starvLow.get(e.getKey()).add((double) Metrics.starvationCount(f, 9, STARV_THRESHOLD));
-                jain.get(e.getKey()).add(Metrics.jainWeighted(f));
+                jfiW.get(e.getKey()).add(Metrics.jainNormalisedService(f, true));
+                jfi1.get(e.getKey()).add(Metrics.jainNormalisedService(f, false));
                 makespan.get(e.getKey()).add(Metrics.makespan(f));
                 overhead.get(e.getKey()).add(r.wallMs());
             }
         }
-        System.out.printf("%n%-16s %14s %14s %14s %12s %10s %9s %11s%n",
-            "scheduler", "resp.p0", "resp.p5", "resp.p9", "waitMAX.p9", "starv.p9", "Jain", "overhead.ms");
+        System.out.printf("%n%-16s %14s %14s %14s %12s %10s %11s %11s %11s%n",
+            "scheduler", "resp.p0", "resp.p5", "resp.p9", "waitMAX.p9", "starv.p9", "overhead.ms", "JFIw", "JFI1");
         for (final String k : schedulers.keySet())
-            System.out.printf("%-16s %14s %14s %14s %12s %10s %9s %11s%n", k,
+            System.out.printf("%-16s %14s %14s %14s %12s %10s %11s %11s %11s%n", k,
                 ci(respHigh.get(k)), ci(respMid.get(k)), ci(respLow.get(k)), ci(waitMaxLow.get(k)),
-                ci(starvLow.get(k)), ci(jain.get(k)), ci(overhead.get(k)));
-        System.out.println("  (resp por clase: FCFS≈plano · Strict≈extremo · ColaPri≈graduado p0<p5<p9 · Jain alto=mejor)");
+                ci(starvLow.get(k)), ci(overhead.get(k)), ci2(jfiW.get(k)), ci2(jfi1.get(k)));
+        System.out.println("  (resp por clase: FCFS≈plano · Strict≈extremo · ColaPri≈graduado p0<p5<p9)");
+        System.out.println("  (JFIw = Jain index of per-class dispatches / weight up to the first class drain, 1 = shares exactly 6:3:1;");
+        System.out.println("   JFI1 = same with weight 1 for every class, i.e. the equal-share criterion)");
         System.out.println("  paired per-seed differences (mean±CI95 of the difference):");
         System.out.printf("    %-28s resp.p0 %s  resp.p5 %s  resp.p9 %s%n", "ColaPri - SFQ-weighted",
             Metrics.pairedCi(respHigh.get("ColaPri"), respHigh.get("SFQ-weighted")),
@@ -228,6 +231,11 @@ public class RigorousEval {
         final Map<String, List<Double>> m = new LinkedHashMap<>();
         for (final String k : schedulers.keySet()) m.put(k, new ArrayList<>());
         return m;
+    }
+
+    private static String ci2(final List<Double> v) {
+        final double[] mc = Metrics.meanCi95(v);
+        return String.format("%.2f±%.2f", mc[0], mc[1]);
     }
 
     private static String ci(final List<Double> v) {

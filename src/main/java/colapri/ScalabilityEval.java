@@ -38,7 +38,7 @@ public class ScalabilityEval {
         System.out.println("#  EXP-C · Scalability (" + HOSTS + " hosts, " + VMS + " VMs, RoundRobin, " + N_SEEDS + " seeds, CI95)");
         System.out.println("#  " + Metrics.PACKAGE_VERSION);
         System.out.println("##########################################################################");
-        System.out.printf("%n%-22s %12s %12s %12s %12s%n", "config", "makespan", "resp.p0", "resp.p9", "overhead.ms");
+        System.out.printf("%n%-22s %12s %12s %12s %12s %11s %11s%n", "config", "makespan", "resp.p0", "resp.p9", "overhead.ms", "JFIw", "JFI1");
 
         final var paired = new ArrayList<String>();
         for (final int n : new int[]{200, 500, 1000}) {
@@ -49,13 +49,16 @@ public class ScalabilityEval {
                     : () -> new CloudletSchedulerColaPri().setPriorityWeight(0, 6).setPriorityWeight(5, 3).setPriorityWeight(9, 1);
                 final var mk = new ArrayList<Double>(); final var p0 = new ArrayList<Double>();
                 final var p9 = new ArrayList<Double>(); final var ov = new ArrayList<Double>();
+                final var jw = new ArrayList<Double>(); final var j1 = new ArrayList<Double>();
                 for (long seed = 0; seed < N_SEEDS; seed++) {
                     final var specs = Workload.seeded(seed, n, 1000.0, new int[]{0, 5, 9}, new int[]{3, 2, 1}, 4000, 0.4, 0.0);
                     final double[] r = run(specs, sc);
-                    mk.add(r[0]); p0.add(r[1]); p9.add(r[2]); ov.add(r[3]);
+                    mk.add(r[0]); p0.add(r[1]); p9.add(r[2]); ov.add(r[3]); jw.add(r[4]); j1.add(r[5]);
                 }
                 MK.put(sched, mk); P0.put(sched, p0); P9.put(sched, p9);
-                System.out.printf("%-22s %12s %12s %12s %12s%n", n + "/" + sched, ci(mk), ci(p0), ci(p9), ci(ov));
+                System.out.printf("%-22s %12s %12s %12s %12s %11s %11s%n", n + "/" + sched, ci(mk), ci(p0), ci(p9), ci(ov),
+                    String.format("%.2f±%.2f", Metrics.meanCi95(jw)[0], Metrics.meanCi95(jw)[1]),
+                    String.format("%.2f±%.2f", Metrics.meanCi95(j1)[0], Metrics.meanCi95(j1)[1]));
             }
             paired.add(String.format("    %-6d makespan %s  resp.p0 %s  resp.p9 %s", n,
                 Metrics.pairedCi(MK.get("ColaPri"), MK.get("default")), Metrics.pairedCi(P0.get("ColaPri"), P0.get("default")),
@@ -102,7 +105,8 @@ public class ScalabilityEval {
         sim.start();
         final double wallMs = (System.nanoTime() - t0) / 1e6;
         final var f = Metrics.checked(broker.getCloudletFinishedList(), cloudlets.size());
-        return new double[]{Metrics.makespan(f), Metrics.meanResponseOfClass(f, 0), Metrics.meanResponseOfClass(f, 9), wallMs};
+        return new double[]{Metrics.makespan(f), Metrics.meanResponseOfClass(f, 0), Metrics.meanResponseOfClass(f, 9), wallMs,
+            Metrics.jainNormalisedService(f, true), Metrics.jainNormalisedService(f, false)};
     }
 
     private static String ci(final List<Double> v) {

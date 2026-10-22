@@ -31,7 +31,7 @@ keywords:
   - CloudSim Plus
 preferred-citation:
   type: article
-  title: "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task Scheduling, Evaluated in CloudSim Plus"
+  title: "ColaPri: a Starvation-Free, Class-Oriented Load-Adaptive Priority Scheduler for Cloud Task Scheduling"
   authors:
     - family-names: "da Silva"
       given-names: "Vitor Luiz"

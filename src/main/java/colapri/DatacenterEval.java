@@ -62,13 +62,13 @@ public class DatacenterEval {
         // metric samples keyed by "mapping/sched"
         final Map<String, List<Double>> makespan = new LinkedHashMap<>(), loadCV = new LinkedHashMap<>(),
             respHigh = new LinkedHashMap<>(), respLow = new LinkedHashMap<>(), waitMaxLow = new LinkedHashMap<>(),
-            starvLow = new LinkedHashMap<>(), overhead = new LinkedHashMap<>();
+            starvLow = new LinkedHashMap<>(), overhead = new LinkedHashMap<>(), jfiW = new LinkedHashMap<>(), jfi1 = new LinkedHashMap<>();
         final List<String> order = new ArrayList<>();
         for (final String mp : mappings.keySet())
             for (final String sc : scheds.keySet()) {
                 final String k = mp + "/" + sc;
                 order.add(k);
-                for (final var m : List.of(makespan, loadCV, respHigh, respLow, waitMaxLow, starvLow, overhead))
+                for (final var m : List.of(makespan, loadCV, respHigh, respLow, waitMaxLow, starvLow, overhead, jfiW, jfi1))
                     m.put(k, new ArrayList<>());
             }
 
@@ -86,15 +86,18 @@ public class DatacenterEval {
                     waitMaxLow.get(k).add(Metrics.maxWaitOfClass(f, 9));
                     starvLow.get(k).add((double) Metrics.starvationCount(f, 9, STARV_THRESHOLD));
                     overhead.get(k).add(r.wallMs());
+                    jfiW.get(k).add(Metrics.jainNormalisedService(f, true));
+                    jfi1.get(k).add(Metrics.jainNormalisedService(f, false));
                 }
         }
 
-        System.out.printf("%n%-22s %13s %9s %13s %13s %13s %10s %11s%n",
-            "mapping/scheduler", "makespan", "loadCV", "resp.p0", "resp.p9", "waitMAX.p9", "starv.p9", "overhead.ms");
+        System.out.printf("%n%-22s %13s %9s %13s %13s %13s %10s %11s %11s %11s%n",
+            "mapping/scheduler", "makespan", "loadCV", "resp.p0", "resp.p9", "waitMAX.p9", "starv.p9", "overhead.ms", "JFIw", "JFI1");
         for (final String k : order)
-            System.out.printf("%-22s %13s %9s %13s %13s %13s %10s %11s%n", k,
+            System.out.printf("%-22s %13s %9s %13s %13s %13s %10s %11s %11s %11s%n", k,
                 ci(makespan.get(k)), ci(loadCV.get(k)), ci(respHigh.get(k)), ci(respLow.get(k)),
-                ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(overhead.get(k)));
+                ci(waitMaxLow.get(k)), ci(starvLow.get(k)), ci(overhead.get(k)), ci2(jfiW.get(k)), ci2(jfi1.get(k)));
+        System.out.println("  (JFIw/JFI1 = Jain index of per-VM-pooled class dispatches / weight (or / 1) up to the first class drain)");
         System.out.println("\n  (makespan/loadCV ≈ mapping · resp.p0/p9 + starv ≈ per-VM scheduler:");
         System.out.println("   para CADA mapping, ColaPri baja resp.p0 y sube resp.p9 frente a default; makespan igual)");
         System.out.println("  paired per-seed differences ColaPri - default (mean±CI95):");
@@ -163,6 +166,11 @@ public class DatacenterEval {
                 + " cloudlets/VM=" + perVm);
         }
         return new Result(finished, wallMs);
+    }
+
+    private static String ci2(final List<Double> v) {
+        final double[] mc = Metrics.meanCi95(v);
+        return String.format("%.2f±%.2f", mc[0], mc[1]);
     }
 
     private static String ci(final List<Double> v) {

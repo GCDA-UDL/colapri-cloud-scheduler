@@ -28,6 +28,10 @@ this release fixes the defect, adds the missing controls and re-captures every l
   dropped the last column, which in EXP-F is `cost`). `scripts/run_all.sh` writes to `results/rerun/`
   and never overwrites the reference logs. Base image pinned by digest in `Dockerfile` and `run_all.sh`.
 - Every log starts with a provenance line (package version, CloudSim Plus version).
+- **Fairness index redefined:** the former `Jain` column (Jain's index over mean response × weight, which
+  rewarded strict priority) is removed from EXP-A and EXP-E. `Metrics.jainNormalisedService` computes
+  Jain's index over the per-class dispatches normalised by weight (`JFIw`) or by 1 (`JFI1`, the
+  equal-share criterion), counted up to the first class drain; printed in EXP-A MAIN, EXP-B and EXP-C.
 - Figures regenerated; `fig_operation` now draws a 6:3:1 dispatch (it drew 7:2:1).
 - Metadata: version 1.1.1 in `pom.xml`, `CITATION.cff`, `.zenodo.json`; author affiliation
   **SEMBAC, Universitat de Lleida**; second author signed as Rosana Tomàs; PROVENANCE file count 1452;

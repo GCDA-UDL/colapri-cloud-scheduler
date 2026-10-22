@@ -157,6 +157,32 @@ public final class Metrics {
         return x.isEmpty() || sumSq == 0 ? 0 : (sum * sum) / (x.size() * sumSq);
     }
 
+    /** Jain fairness index of the per-class service normalised by weight. Service is counted in dispatches
+     *  (task starts) over the longest prefix of the dispatch sequence in which every class still has tasks to
+     *  dispatch, i.e. up to the first class drain, so that every class could have used its share.
+     *  x_c = starts_c / w_c (weighted = true: conformance to the configured shares) or x_c = starts_c
+     *  (weighted = false: the equal-share criterion). J = (sum x)^2 / (n sum x^2) in (0,1]; 1 = service exactly
+     *  proportional to the criterion. Meaningful for burst workloads where all classes are backlogged from the
+     *  start (EXP-A MAIN, EXP-B, EXP-C); with sparse arrivals the prefix can be short. */
+    public static double jainNormalisedService(final List<Cloudlet> finished, final boolean weighted) {
+        if (finished.isEmpty()) return 0;
+        final var byStart = new ArrayList<>(finished);
+        byStart.sort(java.util.Comparator.comparingDouble(Cloudlet::getStartTime));
+        final Map<Integer, Integer> total = new TreeMap<>(), started = new TreeMap<>();
+        for (final var c : finished) total.merge(c.getPriority(), 1, Integer::sum);
+        for (final var c : byStart) {
+            final int p = c.getPriority();
+            started.merge(p, 1, Integer::sum);
+            if (started.get(p).equals(total.get(p))) break;   // this class has drained: stop counting
+        }
+        double sum = 0, sumSq = 0; int n = 0;
+        for (final var e : total.entrySet()) {
+            final double x = started.getOrDefault(e.getKey(), 0) / (weighted ? (double) weightOf(e.getKey()) : 1.0);
+            sum += x; sumSq += x * x; n++;
+        }
+        return sumSq == 0 ? 0 : (sum * sum) / (n * sumSq);
+    }
+
     /** Prints the per-class table and the global summary for one scheduler run. */
     public static void report(final String name, final List<Cloudlet> finished, final int starvationThreshold) {
         System.out.printf("%n--- %s ---%n", name);
